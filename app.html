@@ -1,0 +1,2852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<script src="./theme-boot.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOLOS: Dream Journal</title>
+<style>@font-face { font-family:'VT323'; src:url('vt323.woff2') format('woff2'); font-display:swap; }</style>
+<style>
+  :root { --g:#22c55e; --g-bright:rgba(34,197,94,0.95); --g-dim:rgba(34,197,94,0.55);
+          --g-faint:rgba(34,197,94,0.25); --amber:#ffd24d; --bg:#020604; --text:#d7e8dc; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { text-shadow:0 2px 0 rgba(0,0,0,0.5); }
+  input, textarea { text-shadow:none; }
+  html, body { height:100%; background:var(--bg); color:var(--text); font-family:'VT323', monospace; }
+  /* the chrome, straight from pipe-menu.js: the two bare corners, the box
+     the page lives in, and the full screens that push the box down */
+  :root { --sol-tx:#dddddd; --sol-dim:rgba(221,221,221,0.55); --sol-faint:rgba(221,221,221,0.32);
+    --sol-line:rgba(221,221,221,0.35); --sol-glow:rgba(255,255,255,0.5); }
+  #top { display:contents; }
+  .solos-corner { position:fixed; top:0; z-index:9920; cursor:pointer;
+    font-family:'VT323',monospace; font-size:22px; letter-spacing:0.09em;
+    color:var(--sol-tx); background:none; border:none;
+    padding:10px 18px 7px; transition:opacity .2s ease-in-out;
+    text-transform:lowercase; white-space:nowrap; }
+  .solos-corner:hover { opacity:.6; }
+  #leftBtn { left:0; }
+  #rightBtn { right:0; text-transform:uppercase; }
+  .solos-corner.xOnly { font-size:27px; padding:6px 12px 5px; letter-spacing:0; }
+  #frame { position:fixed; inset:46px 8px 8px 8px; border:2px solid var(--sol-tx); border-radius:6px;
+    background:#0a0a0a; display:flex; flex-direction:column; overflow:hidden;
+    transform:translateZ(0); will-change:transform; transition:transform 1.05s cubic-bezier(.3,.9,.25,1); }
+  body.solos-push #frame { transform:translateY(var(--solos-push, 60vh)) translateZ(0); }
+  .solos-screen { position:fixed; top:44px; left:0; right:0; z-index:9880; display:none;
+    overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain;
+    background:none; font-family:'VT323',monospace; color:var(--sol-tx); }
+  .solos-screen.open { display:block; animation:screenIn .6s ease both; }
+  @keyframes screenIn { from { opacity:0; } to { opacity:1; } }
+  .solos-screen-inner { max-width:860px; margin:0 auto; padding:6px 20px 22px; text-align:center; }
+  .solos-screen-head { text-align:center; margin-bottom:2px; }
+  .solos-screen-head .t { font-size:20px; letter-spacing:0.2em; text-transform:uppercase;
+    text-shadow:3px 0 1px rgba(0,30,255,0.5), -3px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+    display:inline-block; padding:2px 18px; border-radius:10px; background:rgba(10,10,8,0.55);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+  html.solos-lcd .solos-screen-head .t { text-shadow:none; }
+  .solos-sec-h { margin:12px auto 2px; width:fit-content; text-align:center; font-size:12px;
+    letter-spacing:0.3em; text-transform:uppercase; color:var(--sol-faint);
+    padding:2px 14px; border-radius:999px; background:rgba(10,10,8,0.5);
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  .solos-item { display:inline-block; text-align:center; text-decoration:none; color:var(--sol-tx);
+    font-size:clamp(20px, 3.2vw, 32px); line-height:1.25; padding:3px 14px; border:none;
+    background:rgba(10,10,8,0.55); border-radius:10px;
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    font-family:inherit; width:auto; margin:0 16px; cursor:pointer; letter-spacing:0.03em;
+    transform:rotate(var(--tilt, 0deg)); transition:opacity .2s ease-in-out, transform .25s ease-in-out;
+    opacity:0; animation:solosIn .9s cubic-bezier(.2,1.1,.3,1) forwards; animation-delay:var(--in, 0ms); }
+  .solos-item { border-radius:9px; }
+  .solos-item:hover { opacity:.6 !important; transform:rotate(0deg); }
+  .solos-item.small { font-size:clamp(16px, 2.2vw, 20px); margin:0 12px; opacity:0; }
+  .solos-item.current { text-shadow:0 0 12px var(--sol-glow); }
+  .solos-item .sub { display:block; font-size:15px; color:var(--sol-faint); letter-spacing:0.08em; }
+  @keyframes solosIn {
+    from { opacity:0; transform:rotate(calc(var(--tilt, 0deg) * 4)) translateY(34px) scale(.94); }
+    to   { opacity:1; transform:rotate(var(--tilt, 0deg)) translateY(0) scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .solos-item { animation:none; opacity:1; } }
+  .solos-hue { margin:8px auto 0; max-width:420px; text-align:center;
+    background:rgba(10,10,8,0.7); border-radius:12px; padding:8px 16px 10px;
+    box-shadow:0 2px 0 rgba(0,0,0,0.5);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+  .solos-hue input { width:100%; accent-color:var(--sol-tx); }
+  .solos-hue .lab { font-size:14px; letter-spacing:0.18em; text-transform:uppercase; color:var(--sol-faint); }
+  .pipe-tab-actions { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:8px; margin:14px 0 12px; }
+  .pipe-tab-action { display:block; text-align:left; padding:11px 13px; border:2px solid var(--sol-line);
+    border-radius:9px; background:rgba(10,10,8,0.7); color:var(--sol-tx);
+    box-shadow:0 3px 0 rgba(0,0,0,0.5); transition:transform .12s, border-color .15s;
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    font-family:inherit; font-size:17px; letter-spacing:0.04em; cursor:pointer; text-decoration:none;
+    transition:border-color 0.15s, background 0.15s; }
+  .pipe-tab-action:hover { border-color:var(--sol-tx); background:rgba(221,221,221,0.12); }
+  .pipe-tab-action .sub { display:block; font-size:12.5px; color:var(--sol-faint); letter-spacing:0.06em; margin-top:2px; }
+  .pipe-tab-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin:4px 0 14px; }
+  .pipe-tab-stats .st { border:2px solid var(--sol-line); border-radius:9px; padding:9px 12px;
+    background:rgba(10,10,8,0.7); text-align:left; box-shadow:0 2px 0 rgba(0,0,0,0.5);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+  .pipe-tab-stats .st .v { display:block; font-size:19px; color:var(--sol-tx); overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+  .pipe-tab-stats .st .k { display:block; font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--sol-faint); margin-top:1px; }
+
+  /* stage */
+  html.sdj-grounded #frame { background:rgba(10,10,10,0.22); }
+  #stage { flex:1; position:relative; z-index:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:flex-start; gap:6px; padding:20px 12px 236px; min-height:0; }
+  /* liquid glass: the objects hold a blurred pane so they read over any ground */
+  #secBar { background:rgba(8,10,8,0.38); border-radius:999px;
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+  #timing { background:rgba(8,10,8,0.34); border-radius:999px; padding:0 16px;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  #wheelBox svg { position:relative; filter:drop-shadow(0 1px 5px rgba(0,0,0,0.85)); }
+  #wheelBox { flex:0 0 auto; width:var(--wheelW, min(46vh, 94%)); touch-action:none; position:relative;
+    animation:floatA 9s ease-in-out infinite alternate; }
+  @keyframes floatA { from { transform:translateY(-3px); } to { transform:translateY(3px); } }
+  @keyframes floatB { from { transform:translateY(2.5px); } to { transform:translateY(-2.5px); } }
+  @keyframes floatC { from { transform:translateY(-2px); } to { transform:translateY(2px); } }
+  @media (prefers-reduced-motion: reduce) {
+    #wheelBox, #actBar, #timing { animation:none !important; } }
+  /* the ribbon glints like a coin turning in the light */
+  .sdj-glint { animation:glintPass 45s linear infinite; opacity:0.75; }
+  @keyframes glintPass {
+    0% { transform:translateX(0); }
+    4% { transform:translateX(1050px); }
+    100% { transform:translateX(1050px); } }
+  /* the dial sits on a liquid glass disc */
+  #wheelBox::before { content:''; position:absolute; inset:9.4% 0.6% 1.0%; border-radius:50%;
+    background:rgba(10,12,10,0.4); border:none;
+    backdrop-filter:blur(13px) saturate(1.15); -webkit-backdrop-filter:blur(13px) saturate(1.15);
+    box-shadow:inset 0 1px 18px rgba(255,255,255,0.06), 0 10px 34px rgba(0,0,0,0.45); }
+  #wheelBox svg { width:100%; height:auto; display:block; }
+  .sdj-star-live { animation:starpulse 1.4s ease-in-out infinite; }
+  @keyframes starpulse { 0%,100%{opacity:0.6;} 50%{opacity:1;} }
+
+  /* the activity bar below the wheel */
+  /* every object keeps its own place: fixed slots, nothing reflows */
+  #timing { height:20px; line-height:20px; max-width:calc(100% - 190px); font-size:15px; color:var(--g-dim);
+    letter-spacing:0.08em; text-align:center; transition:opacity .35s; white-space:nowrap;
+    max-width:92%; overflow:hidden; text-overflow:ellipsis;
+    animation:floatC 11s ease-in-out infinite alternate; }
+  /* the board: the instruction above, the played cards below, one outline
+     around both, with a notch cut for the grave and the facilitator's key */
+  #board { position:relative; width:var(--wheelW, min(46vh, 94%)); margin:10px auto 0;
+    flex:0 0 auto; display:flex; flex-direction:column;
+    animation:floatB 7.5s ease-in-out infinite alternate; }
+  #boardGlass { position:absolute; inset:0; z-index:0; background:rgba(8,10,8,0.34);
+    backdrop-filter:blur(10px) saturate(1.15); -webkit-backdrop-filter:blur(10px) saturate(1.15); }
+  #boardEdge { position:absolute; inset:0; width:100%; height:100%; z-index:2;
+    pointer-events:none; overflow:visible; }
+  #boardEdge .edge { fill:none; stroke:var(--sol-line); stroke-width:2; }
+  #boardEdge .split { fill:none; stroke:var(--sol-line); stroke-width:1; opacity:0.5; }
+  #actBar { height:88px; position:relative; z-index:1;
+    display:flex; align-items:center;
+    justify-content:center; transition:opacity .35s; }
+  .flashCard.mat { opacity:1; height:66px; cursor:default; }
+  .flashCard.tutorLine { cursor:default; }
+  .flashCard.tutorLine .fcName { font-size:19px; line-height:1.15; -webkit-line-clamp:4; }
+  .flashCard.tutorLine small { margin-top:5px; font-size:12px; line-height:1.25;
+    color:rgba(255,210,77,0.72); }
+  body.tutoring #checkBtn, body.tutoring #graveClose, body.tutoring #nextIn,
+  body.tutoring #signInvite, body.tutoring #addrNote { display:none !important; }
+  .flashCard.quiet { opacity:1; }
+  .flashCard:active, #signInvite:active, #addrNote:active { transform:translateY(2px); }
+  .pipe-tab-action:active, .pbtn:active, .listRow button:active, .libBtns button:active,
+  .solos-hue input:active { transform:translateY(2px); }
+  .solos-item:active { transform:rotate(var(--tilt, 0deg)) translateY(2px); }
+  @keyframes sdjflashAll {
+    0%,100% { box-shadow:0 4px 0 rgba(0,0,0,0.55), 0 0 8px rgba(255,210,77,0.22); opacity:0.62; }
+    50% { box-shadow:0 4px 0 rgba(0,0,0,0.55), 0 0 30px rgba(255,210,77,0.8); opacity:1; } }
+  /* the three places a card can be: the draw, the hand, the field, the grave */
+  #hand { position:absolute; left:16px; bottom:6px; z-index:40; height:calc(var(--ch,84px) + 28px);
+    touch-action:manipulation; }
+  /* the cards are dealt a little larger where there is room for them */
+  @media (min-width: 720px) { #winBot { --cw:72px; --ch:101px; } }
+  .handSlot { position:absolute; bottom:6px; transform-origin:bottom center;
+    transform:rotate(var(--rot, 0deg)) translateY(calc(var(--arc, 0px) + var(--ty, 0px)));
+    transition:transform .55s cubic-bezier(.25,1.3,.3,1), left .55s cubic-bezier(.25,1.3,.3,1),
+      opacity .5s ease; }
+  #hand.dealing .handSlot { opacity:0; transform:translateY(70px) rotate(-8deg); left:0 !important; }
+  .handSlot.lift { --ty:-22px; z-index:3; }
+  .handSlot.wave { --ty:-15px; z-index:2; }
+  .handSlot.near { --ty:-6px; }
+  .handSlot.lift.wave { --ty:-31px; }
+  .handSlot.lift.near { --ty:-26px; }
+  @keyframes cardBreath {
+    from { transform:translateY(0) rotate(-1.1deg); }
+    to   { transform:translateY(-5px) rotate(1.3deg); } }
+  @media (prefers-reduced-motion: reduce) { .handCard { animation:none !important; } }
+  .handCard { position:relative; width:var(--cw,60px); height:var(--ch,84px); border-radius:9px;
+    animation:cardBreath var(--dur, 11s) ease-in-out var(--delay, 0s) infinite alternate;
+    border:2px solid rgba(255,210,77,0.8); background:rgba(26,20,8,0.92);
+    box-shadow:0 3px 0 rgba(0,0,0,0.6);
+    color:var(--amber); display:flex; flex-direction:column; align-items:flex-start;
+    justify-content:flex-start; gap:4px; padding:6px 4px 4px 6px;
+    font-family:'VT323',monospace; font-size:12px;
+    letter-spacing:0.06em; transform-origin:bottom center; cursor:pointer;
+    transition:border-color .3s, box-shadow .35s, opacity .35s; }
+  .handCard svg { width:21px; height:21px; }
+  .handCard .cname { line-height:1.02; text-align:left; font-size:10px; letter-spacing:0.02em;
+    margin-top:auto; padding:0 1px 2px; max-height:34px; overflow:hidden; word-break:break-word; }
+  .handCard .pip { position:absolute; top:2px; right:4px; font-size:10px; color:rgba(255,210,77,0.8); }
+  .handCard .pip.big { top:50%; left:0; right:0; transform:translateY(-50%); text-align:center;
+    font-size:26px; color:var(--sol-tx); text-shadow:0 2px 0 rgba(0,0,0,0.7); }
+  .handCard .pip.word { top:20px; left:0; right:0; text-align:center; font-size:14px;
+    letter-spacing:0.12em; color:var(--sol-dim); }
+  .handCard.graveCard { opacity:0.92; }
+  .handSlot.lift .handCard { border-color:#ffe9a3; box-shadow:0 9px 0 rgba(0,0,0,0.5), 0 0 18px; }
+  #hand.stacked .handSlot { left:0 !important; --arc:0px !important; }
+  .handCard.spent { opacity:0.35; }
+  .handCard:active { opacity:.85; }
+  .handCard.onMat { z-index:6; }
+  .handCard.played { border-color:rgba(221,221,221,0.6); color:var(--sol-tx);
+    background:rgba(16,16,14,0.94); }
+  .handCard.tone-now { border-color:#ffd24d; color:#ffd24d; background:rgba(26,20,8,0.92);
+    animation:cardBreath var(--dur, 11s) ease-in-out var(--delay, 0s) infinite alternate,
+      cardShimmer 4.2s ease-in-out infinite; }
+  .handCard.shining { animation:cardBreath var(--dur, 11s) ease-in-out var(--delay, 0s) infinite alternate,
+      redShimmer 4.2s ease-in-out infinite; }
+  @keyframes redShimmer {
+    0%,100% { box-shadow:0 3px 0 rgba(0,0,0,0.6), 0 0 6px rgba(255,80,70,0.3); }
+    50% { box-shadow:0 3px 0 rgba(0,0,0,0.6), 0 0 24px rgba(255,80,70,0.85); } }
+  @keyframes cardShimmer {
+    0%,100% { box-shadow:0 3px 0 rgba(0,0,0,0.6), 0 0 6px rgba(255,210,77,0.25); }
+    50% { box-shadow:0 3px 0 rgba(0,0,0,0.6), 0 0 22px rgba(255,210,77,0.8); } }
+  .handCard.tone-always { border-color:#ff5046; color:#ff8a80; background:rgba(26,10,8,0.92); }
+  .handCard.tone-fac { border-color:#ff9f45; color:#ffc48a; background:rgba(26,16,6,0.92); }
+  .handSlot.lift .handCard.tone-now { border-color:#ffe9a3; }
+  .handSlot.lift .handCard.tone-always { border-color:#ff8a80; }
+  .handSlot.lift .handCard.tone-fac { border-color:#ffd0a0; }
+  /* the draw sits above the grave, both in the right corner */
+  #drawPile { position:absolute; right:14px; bottom:4px; z-index:41; width:74px; height:98px;
+    background:none; border:none; cursor:pointer; padding:0; display:none; }
+  #drawPile.on { display:block; }
+  #drawPile .drawCount, #pile .pileCount { position:absolute; bottom:-16px; left:0; right:0;
+    text-align:center; font-family:'VT323',monospace; font-size:12px; color:var(--sol-dim);
+    letter-spacing:0.1em; }
+  #drawPile.fresh .handCard.back { border-color:var(--amber);
+    animation:drawGlow 2.4s ease-in-out infinite; }
+  @keyframes drawGlow {
+    0%,100% { box-shadow:0 3px 0 rgba(0,0,0,0.6), 0 0 8px rgba(255,210,77,0.35); }
+    50% { box-shadow:0 3px 0 rgba(0,0,0,0.6), 0 0 26px rgba(255,210,77,0.95); } }
+  #nextIn { position:absolute; right:8px; bottom:34px; z-index:41; width:78px; text-align:center;
+    font-family:'VT323',monospace; font-size:13px; color:var(--sol-faint); line-height:1.25;
+    display:none; }
+  #nextIn.on { display:block; }
+  #pile { position:absolute; right:14px; bottom:110px; z-index:40; width:74px; height:106px;
+    background:none; border:none; cursor:pointer; display:none; padding:0;
+    transition:width .55s cubic-bezier(.25,1.3,.3,1), bottom .5s cubic-bezier(.25,1,.3,1); }
+  #pile.on { display:block; }
+  /* opened, the grave rises clear of the hand so every card can be read */
+  #pile.open { bottom:132px; z-index:60; }
+  /* the facilitator's yellow key: the whole draw laid out to be looked through */
+  #checkBtn { position:absolute; right:14px; bottom:228px; z-index:42; display:none;
+    font-family:'VT323',monospace; font-size:13px; letter-spacing:0.06em; color:#ffd24d;
+    border:1px solid rgba(255,210,77,0.75); border-radius:7px; padding:2px 9px;
+    background:rgba(26,20,8,0.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 2px 0 rgba(0,0,0,0.55); cursor:pointer; }
+  #checkBtn.on { display:block; }
+  #graveClose { position:absolute; right:14px; bottom:228px; z-index:62; display:none;
+    font-family:'VT323',monospace; font-size:13px; letter-spacing:0.06em; color:#ff9f45;
+    border:1px solid rgba(255,159,69,0.8); border-radius:7px; padding:2px 9px;
+    background:rgba(26,16,6,0.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 2px 0 rgba(0,0,0,0.55); cursor:pointer; }
+  body.graveOpen #graveClose { display:block; }
+  /* the grave, once open, has the floor to itself */
+  body.graveOpen #checkBtn, body.graveOpen #signInvite,
+  body.checking #signInvite { opacity:0; pointer-events:none; }
+  #signInvite { transition:opacity .4s ease; }
+  #drawSpread { position:absolute; left:8px; right:8px; bottom:126px; z-index:58; display:none;
+    flex-direction:column; gap:10px; padding:10px 10px 6px;
+    background:rgba(10,12,10,0.72); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border:1px solid var(--sol-line); border-radius:14px; box-shadow:0 6px 0 rgba(0,0,0,0.5); }
+  #drawSpread.on { display:flex; }
+  #drawSpread #checkBtn { position:static; display:block; align-self:flex-end; }
+  .spreadRow { display:flex; gap:8px; overflow-x:auto; overflow-y:hidden;
+    justify-content:safe center; padding:6px 2px 8px; scrollbar-width:none; }
+  .spreadRow::-webkit-scrollbar { display:none; }
+  .spreadRow .handCard { flex:0 0 auto; }
+  body.checking #drawPile, body.checking #pile, body.checking #nextIn { display:none !important; }
+  body.adminOn #checkBtn, body.adminOn #drawSpread { display:none !important; }
+  .handCard.back { pointer-events:none; border-color:rgba(221,221,221,0.5);
+    background:repeating-linear-gradient(45deg, rgba(30,30,26,0.95) 0 5px, rgba(18,18,16,0.95) 5px 10px); }
+  /* the lower half of the board: what has been laid down, up to four */
+  #field { position:relative; z-index:1; height:96px; pointer-events:none;
+    padding-right:calc(var(--notch, 0px) + 6px); }
+  #field .fieldCard { position:absolute; bottom:6px; pointer-events:auto;
+    transition:transform .6s cubic-bezier(.25,1.3,.3,1), left .6s cubic-bezier(.25,1.3,.3,1),
+      opacity .5s ease; }
+  #field .fieldCard.sel .handCard { border-color:#ffe9a3; box-shadow:0 8px 0 rgba(0,0,0,0.5), 0 0 20px; }
+  /* the library: voice memos, without the record button */
+  #library { position:absolute; inset:0; z-index:80;
+    background:rgba(8,10,8,0.85); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    border-top:1px solid var(--sol-line); border-radius:14px 14px 0 0;
+    transform:translateY(104%); transition:transform .38s cubic-bezier(.25,1,.3,1);
+    display:flex; flex-direction:column; font-family:'VT323',monospace; }
+  #library.open { transform:none; }
+  #libHandle { padding:10px 0 5px; cursor:grab; touch-action:none; }
+  #libHandle i { display:block; width:44px; height:4px; border-radius:2px;
+    background:var(--sol-faint); margin:0 auto; }
+  #libTitle { text-align:center; font-size:21px; color:var(--sol-tx); letter-spacing:0.1em;
+    padding-bottom:9px; border-bottom:1px solid var(--sol-line); }
+  #libRows { flex:1; overflow-y:auto; padding:4px 16px 30px; }
+  .libTabs { display:flex; gap:6px; padding:8px 0 10px; }
+  .libTab { flex:1; font-family:inherit; font-size:14px; letter-spacing:0.06em;
+    color:var(--sol-dim); background:rgba(10,10,8,0.6); border:2px solid var(--sol-line);
+    border-radius:9px; padding:6px 2px; cursor:pointer; box-shadow:0 2px 0 rgba(0,0,0,0.5); }
+  .libTab.on { color:var(--sol-tx); border-color:var(--sol-tx); }
+  .libRow { padding:12px 6px; border-bottom:1px solid rgba(221,221,221,0.12); cursor:pointer;
+    transition:background .12s; }
+  .libRow:active { background:rgba(221,221,221,0.06); }
+  .libRow .t { font-size:19px; color:var(--text); }
+  .libRow .s { font-size:13px; color:var(--sol-faint); margin-top:2px; letter-spacing:0.05em; }
+  .libRow.sel .t { color:var(--amber); }
+  .libOpen { padding:10px 2px 4px; }
+  .libTrans { font-size:15px; line-height:1.6; color:var(--g-dim); white-space:pre-wrap;
+    max-height:26vh; overflow-y:auto; border:1px dashed var(--g-faint); border-radius:10px;
+    padding:10px 12px; }
+  .libBtns { display:flex; gap:10px; margin-top:10px; }
+  .libBtns button { font:inherit; font-size:15px; border:1px solid var(--g-faint);
+    background:none; color:var(--g-bright); border-radius:8px; padding:6px 18px; cursor:pointer; }
+  .libBtns button.danger { color:#ff5046; border-color:rgba(255,80,70,0.5); }
+  #addrNote { width:min(560px, 94%); border:2px solid var(--amber); border-radius:12px;
+    padding:9px 16px; text-align:center; color:var(--amber); cursor:pointer;
+    background:rgba(46,36,12,0.8); backdrop-filter:blur(9px); -webkit-backdrop-filter:blur(9px);
+    box-shadow:0 3px 0 rgba(0,0,0,0.55); animation:sdjflash 2.8s ease-in-out infinite;
+    transition:transform .12s; }
+  #addrNote small { display:block; font-size:13px; color:var(--g-dim); letter-spacing:0.06em; }
+  /* admin: each activity holds its own space, several to a line */
+  #adminScreen .solos-item { font-size:clamp(17px, 4.8vw, 24px); margin:7px 12px;
+    padding:4px 14px; }
+  body.adminOn #hand { display:none; }
+  /* the admin spec card, in the editor's clothes */
+  #actBar.adminBar { height:auto; min-height:236px; margin-top:40px; padding-bottom:12px; }
+  body.adminOn #stage { padding-bottom:120px; }
+  body.adminOn #board { width:min(560px, 96%); }
+  body.adminOn #field, body.adminOn #boardEdge, body.adminOn #boardGlass { display:none; }
+  .icard { border:2px solid var(--sol-tx); border-radius:12px; padding:16px 18px 18px;
+    width:min(560px, 96%); background:rgba(18,18,16,0.88);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    display:flex; flex-direction:column; gap:14px; box-shadow:0 5px 0 rgba(0,0,0,0.55); }
+  .icard .ttl { font-size:20px; color:var(--sol-tx); text-align:center; }
+  .ctlRow { display:flex; align-items:center; justify-content:center; gap:14px; row-gap:14px; flex-wrap:wrap; }
+  .ctl { display:flex; align-items:center; gap:8px; font-size:16px; color:var(--sol-dim); }
+  .ctl button { font-family:inherit; font-size:17px; color:var(--sol-tx); background:rgba(10,10,8,0.6);
+    border:2px solid var(--sol-line); border-radius:9px; padding:1px 10px; cursor:pointer; min-width:34px;
+    box-shadow:0 2px 0 rgba(0,0,0,0.6);
+    transition:transform .16s cubic-bezier(.2,1.6,.3,1), box-shadow .12s, border-color .12s; }
+  .ctl button:hover { border-color:var(--sol-tx); }
+  .ctl button:active { transform:translateY(2px); box-shadow:0 0 0 rgba(0,0,0,0.6); }
+  .ctl button.on { border-color:#ffffff; color:#ffffff; }
+  .ctl button.danger { color:#ffb3ad; border-color:var(--red, #ff5046); background:rgba(46,12,10,0.85); }
+  .ctl button.danger.confirm { background:rgba(255,80,70,0.18); color:#fff; }
+  .ctl button.goodBtn { color:#a7f3c0; border-color:#22c55e; background:rgba(10,44,22,0.9); }
+  .ctl .val { min-width:26px; text-align:center; color:var(--sol-tx); font-size:18px; display:inline-block; }
+  .icard .inote { font-size:14px; color:var(--sol-dim); text-align:center; line-height:1.6;
+    letter-spacing:0.04em; }
+  .ctl input[type=time] { font-family:inherit; font-size:17px; color:var(--sol-tx);
+    background:rgba(0,0,0,0.5); border:2px solid var(--sol-line); border-radius:9px;
+    padding:2px 8px; color-scheme:dark; box-shadow:0 2px 0 rgba(0,0,0,0.6); }
+  /* the stream shows nothing but breath */
+  .streamBreath { width:20px; height:20px; border-radius:50%; background:var(--amber);
+    opacity:0.25; }
+  .streamBreath.on { animation:breathe 3.2s ease-in-out infinite; }
+  @keyframes breathe { 0%,100% { opacity:0.25; } 50% { opacity:0.9; } }
+  #signInvite { margin:18px auto 0; max-width:340px; text-align:center; padding:14px 18px;
+    border:2px solid var(--amber); border-radius:12px; color:var(--amber); cursor:pointer;
+    box-shadow:0 3px 0 rgba(0,0,0,0.55), 0 0 18px; background:rgba(46,36,12,0.8);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); transition:transform .12s; }
+  #signInvite small { display:block; color:var(--g-dim, #5a8a6d); margin-top:6px; }
+  .flashCard { border:2px solid transparent; border-radius:12px; padding:10px 16px;
+    width:100%; font-size:24px; color:var(--amber); cursor:pointer; letter-spacing:0.08em;
+    background:none; text-align:center; transition:transform .12s; }
+  /* the board carries the invitation now: its own outline glows */
+  #boardEdge .edge { transition:stroke .5s ease; }
+  #board.live .edge { stroke:var(--amber); animation:boardFlash 4.2s ease-in-out infinite; }
+  #board.quiet .edge { stroke:var(--amber); opacity:0.75; }
+  @keyframes boardFlash {
+    0%,100% { filter:drop-shadow(0 0 3px rgba(255,210,77,0.28)); }
+    50% { filter:drop-shadow(0 0 11px rgba(255,210,77,0.85)); } }
+  @media (prefers-reduced-motion: reduce) { #board.live .edge { animation:none; } }
+  @keyframes sdjflash { 0%,100%{ box-shadow:0 0 8px rgba(255,210,77,0.25);} 50%{ box-shadow:0 0 30px rgba(255,210,77,0.75);} }
+  .flashCard { display:flex; align-items:center; gap:14px; text-align:left; }
+  .fcGo { flex:0 0 auto; width:23%; min-width:82px; font-family:inherit; font-size:15px;
+    line-height:1.05; color:#ffffff; background:#1f9e4d; border:2px solid #2fd06a;
+    border-radius:9px; padding:9px 6px; cursor:pointer; letter-spacing:0.04em;
+    box-shadow:0 3px 0 rgba(0,0,0,0.55); transition:transform .12s; }
+  .fcGo:active { transform:translateY(2px); }
+  .fcName { flex:1 1 auto; font-size:23px; line-height:1.1; color:var(--amber);
+    text-align:center; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+    overflow:hidden; padding-right:6px; }
+  .fcGo.gold { background:rgba(70,52,10,0.9); border-color:var(--amber); color:var(--amber); }
+  .flashCard small { display:block; font-size:13px; color:rgba(255,210,77,0.7); letter-spacing:0.06em; }
+  #nextNote { font-size:17px; color:var(--g-dim); letter-spacing:0.06em; text-align:center; }
+  #nextNote b { color:var(--g-bright); font-weight:normal; }
+
+  /* activity panel: one simple screen, same theme, inside the border */
+  #panel { position:absolute; inset:0; background:rgba(4,6,4,0.72); display:none;
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    text-align:center; padding:32px 8vw; z-index:50; overflow-y:auto; }
+  #panel.open { display:flex; }
+  #panel h2 { font-size:clamp(24px, 4.4vw, 36px); color:var(--g-bright); font-weight:normal; }
+  #panel .note { font-size:16px; color:var(--g-dim); max-width:560px; line-height:1.6; }
+  .recBig { width:110px; height:110px; border-radius:50%; border:2px solid var(--g-faint);
+    background:rgba(20,30,22,0.8); color:#ff5046; font-size:34px; font-family:inherit; cursor:pointer;
+    box-shadow:0 4px 0 rgba(0,0,0,0.55); transition:transform .12s; }
+  .recBig:active { transform:translateY(2px); }
+  .recBig.on { border-color:#ff5046; animation:sdjflash 1.2s infinite; }
+  #panel textarea { width:min(620px, 84vw); min-height:36vh; background:#04140b;
+    border:1px solid var(--g-faint); border-radius:12px; color:var(--text); font:inherit;
+    font-size:17px; line-height:1.7; padding:14px; }
+  #panel textarea:focus { outline:none; border-color:var(--g); }
+  .listRow { display:flex; align-items:center; gap:12px; border:1px solid var(--g-faint);
+    border-radius:10px; padding:10px 16px; width:min(560px, 84vw); font-size:16px; }
+  .listRow .nm { flex:1; text-align:left; color:var(--text); overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+  .listRow button { border:2px solid var(--g-faint); background:rgba(10,10,8,0.6); color:var(--g-bright);
+    border-radius:9px; padding:6px 14px; font:inherit; font-size:14px; cursor:pointer;
+    box-shadow:0 2px 0 rgba(0,0,0,0.55); transition:transform .12s; }
+  .transcript { max-width:640px; font-size:19px; line-height:1.8; color:var(--text);
+    text-align:left; white-space:pre-wrap; max-height:34vh; overflow-y:auto;
+    border:1px dashed var(--g-faint); border-radius:12px; padding:16px; }
+  .panelBtns { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  .pbtn { border:2px solid rgba(34,197,94,0.6); background:rgba(10,40,22,0.75);
+    color:var(--g-bright); border-radius:9px; padding:10px 24px; font:inherit;
+    font-size:17px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,0.55); transition:transform .12s; }
+  .pbtn.quiet { border-color:var(--g-faint); color:var(--g-dim); }
+  #status { position:absolute; bottom:10px; left:0; right:0; text-align:center;
+    font-size:14px; color:var(--g-dim); }
+</style>
+
+<style id="twoWindows">
+  /* two windows, the way the tape has them: the wheel above, the cards below */
+  /* the two windows are the only boxes: the frame around them carries no border of its own,
+     and each window wears the bright one the frame used to wear */
+  /* the two windows stand where the one perimeter used to: the frame keeps nothing back */
+  #frame { padding:0; gap:8px; border:0; border-radius:0; background:none; }
+  .win { position:relative; flex:1 1 50%; min-height:0; border:2px solid var(--sol-tx); border-radius:6px;
+    background:rgba(0,0,0,0.30); overflow:hidden; }
+  /* two portholes: each keeps all four of its curves, and the glow stands between them */
+  #frame { gap:10px; }
+  .win { border-radius:14px; box-shadow:0 0 0 1px rgba(0,0,0,0.55), 0 0 22px 2px rgba(235,235,235,0.22); }
+  #winTop { display:flex; flex-direction:column; }
+  #stage { flex:1; min-height:0; padding:10px 10px 8px; justify-content:center; gap:6px; }
+  body.adminOn #stage { padding-bottom:10px; }
+  /* the top window wears one of two faces: the wheel, or the field */
+  #stage:not(.fieldUp) #board { display:none; }
+  #stage.fieldUp #wheelBox, #stage.fieldUp #timing { display:none; }
+  #stage.fieldUp #board, body.adminOn #stage #board, body.tutoring #stage #board { width:min(96%, 680px); margin:0 auto; flex:1 1 auto; min-height:0; max-height:100%;
+    animation:none; }
+  #stage.fieldUp #field { height:auto; flex:1 1 auto; min-height:104px; padding-right:6px; }
+  body.adminOn #stage #board, body.tutoring #stage #board { display:flex !important; }
+  body.adminOn #stage #wheelBox { display:none; }
+  #faceBtn { position:absolute; top:8px; right:10px; z-index:5; font-family:'VT323',monospace; font-size:13px;
+    letter-spacing:0.14em; text-transform:uppercase; color:var(--sol-dim); background:rgba(10,10,8,0.62);
+    border:1px solid var(--sol-line); border-radius:999px; padding:3px 11px; cursor:pointer;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); box-shadow:0 2px 0 rgba(0,0,0,0.5); }
+  #faceBtn:hover { color:var(--amber); border-color:var(--amber); }
+  #faceBtn.live { color:var(--amber); border-color:var(--amber); animation:sdjflash 2.8s ease-in-out infinite; }
+  body.adminOn #faceBtn, body.tutoring #faceBtn { display:none; }
+  /* the lower window holds the hand, the draw, the pile, and every panel that opens */
+  #winBot { padding:0; }
+  #panel { padding:14px 5vw; gap:12px; justify-content:flex-start; }
+  #panel > :first-child { margin-top:auto; }
+  #panel > :last-child { margin-bottom:auto; }
+  #panel h2 { font-size:clamp(20px, 3.6vw, 28px); }
+  /* the voice's circle is whole: it never gives up its height to the room around it */
+  .stStage { flex:0 0 auto; width:min(300px, 74vw, 34vh) !important; height:min(300px, 74vw, 34vh) !important; }
+  .recBig { flex:0 0 auto; }
+  #library { border-radius:14px; border-top:none; }
+</style>
+</head>
+<body>
+<div id="top">
+    <button class="solos-corner" id="leftBtn" aria-haspopup="true">menu</button>
+    <button class="solos-corner" id="rightBtn" aria-haspopup="true">SOLOS</button>
+    <div class="solos-screen" id="menuScreen" role="dialog" aria-label="Menu"></div>
+    <div class="solos-screen" id="pagesScreen" role="dialog" aria-label="Pages"></div>
+    <div class="solos-screen" id="adminScreen" role="dialog" aria-label="Activities"></div>
+  </div>
+<div id="frame">
+  <div class="win" id="winTop">
+  <div id="stage">
+    <div id="wheelBox"><svg id="wheel" viewBox="-144 -154 648 616"></svg></div>
+    <div id="board">
+      <div id="boardGlass"></div>
+      <svg id="boardEdge" aria-hidden="true"><path class="edge"/><path class="split"/></svg>
+      <div id="actBar"></div>
+      <div id="field" aria-label="In play"></div>
+    </div>
+    <div id="timing"></div>
+  </div>
+  <button id="faceBtn" type="button" aria-label="Show the field or the wheel"><span>field</span></button>
+  </div>
+  <div class="win" id="winBot">
+  <div id="panel"></div>
+  <div id="hand" aria-label="Your hand"></div>
+  <button id="drawPile" aria-label="The draw"></button>
+  <div id="nextIn"></div>
+  <button id="pile" aria-label="The pile"></button>
+  <button id="checkBtn">check cards</button>
+  <button id="graveClose">close</button>
+  <div id="drawSpread" aria-label="The whole draw"></div>
+  <div id="library">
+    <div id="libHandle"><i></i></div>
+    <div id="libTitle">Recordings</div>
+    <div id="libRows"></div>
+  </div>
+  </div>
+  <div id="status"></div>
+</div>
+
+<script src="local/local-supabase.js"></script>
+<script src="local/local.js"></script>
+<script src="./sdj-core.js"></script>
+<script src="./sdj-stage.js"></script>
+<script src="./sdj-ground.js" data-home="1"></script>
+<script>
+(async function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const status = (s) => { if (s) console.log('[sdj]', s); };
+
+  // ── the wheel first: the journal opens onto its main screen, and the
+  //    sign-in waits until after you have arrived. ──
+  let user = null, lastWindows = [], doneSet = new Set(), scrubbing = false, myClasses = [];
+  let adminMode = false;
+  let handQueue = [], pileOpen = false, pilePick = null, checkMode = false, fieldSel = null;
+  let tutorialOn = false, tutorialStop = false, tutorHour = 5.6;
+  let seqCards = [], seqIndex = -1, seqActive = false, handReady = false;
+  let activeClass = '';
+  try { activeClass = localStorage.getItem('sdj-active-class') || ''; } catch (e) {}
+  const themeKey = () => 'ivr:theme:' + (activeClass || 'main');
+  let lastSig = '', painting = false, scrubShown = null, unwinding = false;
+  await SDJ.loadSchedule();
+  paint();
+  // The wheel anchors to the dreamer's own sky: remembered place first,
+  // then a fresh fix from the device (which repaints when it lands).
+  SDJ.loadEnrollmentLocation().then(() => paint());
+  SDJ.captureLocation().then(() => paint());
+
+  const c = SDJ.client();
+  /* signing in is the one window every app shows, over this page */
+  function askSignIn() {
+    if (window.SignInWindow) SignInWindow.open(c, { closable: true, onSignedIn: () => location.reload() });
+  }
+  user = await SDJ.user();
+  if (user) {
+    // Inside the SOLOS app on iOS, the html page is only a doorway: a
+    // signed-in dreamer is handed straight into the native Dream Journal
+    // app, session and all. Without the app installed, the page stays.
+    const standalone = navigator.standalone ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    if (false) {
+      const { data } = await c.auth.getSession();
+      if (data && data.session) {
+        location.href = 'dreamjournal://auth#access_token=' +
+          encodeURIComponent(data.session.access_token) + '&refresh_token=' +
+          encodeURIComponent(data.session.refresh_token);
+      }
+    }
+    // enrollment: the first signed-in visit creates it
+    const en = await c.from('sdj_enrollments').select('*').eq('user_id', user.id).maybeSingle();
+    if (!en.data) {
+      await c.from('sdj_enrollments').insert({ user_id: user.id });
+    }
+    // the sequence: classes supersede the open rhythm
+    await SDJ.loadSequence(activeClass || null);
+    if (SDJ._classes && SDJ._classes.length) {
+      const ids = SDJ._classes.map((m) => m.class_id);
+      const { data: cls } = await c.from('sdj_classes').select('id, name').in('id', ids);
+      myClasses = cls || [];
+    }
+    lastSig = '';
+    paint();
+    // an address from the facilitator arrives as a notice
+    if (SDJ._classes && SDJ._classes.length) {
+      const ids = SDJ._classes.map((m) => m.class_id);
+      const seen = localStorage.getItem('sdj-addr-seen') || '1970-01-01';
+      const { data: addr } = await c.from('sdj_class_addresses').select('*')
+        .in('class_id', ids).gt('created_at', seen)
+        .order('created_at', { ascending: false }).limit(1);
+      if (addr && addr.length) {
+        const a = addr[0];
+        const bar = document.createElement('div');
+        bar.id = 'addrNote';
+        bar.innerHTML = '<b>Your facilitator addressed the class.</b><small>tap to listen</small>';
+        bar.onclick = async () => {
+          try { new Audio(await SDJ.audioUrl(a.audio_path)).play(); } catch (e) {}
+          localStorage.setItem('sdj-addr-seen', a.created_at);
+          bar.remove();
+        };
+        $('stage').insertBefore(bar, $('stage').firstChild);
+      }
+    }
+  } else {
+    // on the web, a newcomer meets the welcome before anything else
+    let seen = null;
+    try { seen = localStorage.getItem('sdj-seen-welcome'); } catch (e) {}
+    if (!seen && location.protocol !== 'file:') {
+      location.replace('./welcome.html');
+      return;
+    }
+    // a glowing invitation under the wheel; the activities lead here too
+    const invite = document.createElement('div');
+    invite.id = 'signInvite';
+    invite.innerHTML = '<b>Sign in to keep your dreams.</b>' +
+      '<small>Your recordings and your rhythm are saved to your own account.</small>';
+    invite.onclick = () => {
+      askSignIn();
+    };
+    $('board').insertAdjacentElement('afterend', invite);
+    setTimeout(() => { if (typeof fitStage === 'function') { fitStage(); layoutBoard(); } }, 60);
+  }
+
+  // ── the corners and the screens, exactly as pipe-menu builds them ──
+  let role = 'participant';
+  if (user) {
+    const prof = await c.from('profiles').select('global_role').eq('id', user.id).maybeSingle();
+    role = (prof.data && prof.data.global_role) || 'participant';
+    if (role === 'administrator') role = 'admin';
+  }
+  window.__sdjRole = role;
+
+  const SITE = '/dashboard';
+  const menuScreen = $('menuScreen');
+  const pagesScreen = $('pagesScreen');
+  const adminScreen = $('adminScreen');
+
+  // the SOLOS screen theme: the tube and the crystal, LS 'ivr:theme',
+  // the same store theme-boot reads before first paint
+  function readTheme() {
+    try {
+      return JSON.parse(localStorage.getItem(themeKey()) ||
+        localStorage.getItem('ivr:theme') || '{}') || {};
+    } catch (e) { return {}; }
+  }
+  function themeScreenOf(t) {
+    return t.screen === 'lcd' ? 'lcd' : (t.screen === 'crt' ? 'crt' : (t.mode === 'light' ? 'lcd' : 'crt'));
+  }
+  function applySolosTheme() {
+    const t = readTheme();
+    const screen = themeScreenOf(t);
+    const hue = parseInt(t.hue, 10) || 0;
+    const doc = document.documentElement;
+    doc.classList.toggle('solos-lcd', screen === 'lcd');
+    doc.classList.toggle('solos-crt', screen === 'crt');
+    if (screen === 'lcd') {
+      let f = 'grayscale(1) invert(1) brightness(0.94) contrast(0.8)';
+      if (hue) f += ' sepia(0.45) saturate(1.8) hue-rotate(' + ((hue + 310) % 360) + 'deg)';
+      doc.style.filter = f;
+    } else {
+      // the tube no longer colorizes the whole picture: the objects take
+      // their color from the ink, the ground keeps a color of its own
+      doc.style.filter = '';
+    }
+    doc.style.backgroundColor = screen === 'lcd' ? '#0a0a0a' : '#050505';
+    const ink = (l, a) => hue ? 'hsla(' + hue + ',62%,' + l + '%,' + a + ')'
+                             : 'hsla(0,0%,' + Math.min(l + 30, 92) + '%,' + a + ')';
+    const s = doc.style;
+    s.setProperty('--g', ink(46, 1));
+    s.setProperty('--g-bright', ink(62, 0.95));
+    s.setProperty('--g-dim', ink(50, 0.55));
+    s.setProperty('--g-faint', ink(50, 0.25));
+    s.setProperty('--text', ink(86, 1));
+    s.setProperty('--amber', hue ? 'hsl(' + ((hue + 40) % 360) + ',85%,62%)' : '#dddddd');
+    s.setProperty('--sol-tx', ink(87, 1));
+    s.setProperty('--sol-dim', ink(87, 0.55));
+    s.setProperty('--sol-faint', ink(87, 0.32));
+    s.setProperty('--sol-line', ink(87, 0.35));
+    s.setProperty('--sol-glow', ink(95, 0.5));
+    if (window.SDJGround) SDJGround.sync();
+    if (typeof renderTheWheel === 'function' && lastWindows.length) renderTheWheel(SDJ.nowHour());
+  }
+  /* the housing hands the screen down into this window and applies it here */
+  window.SDJTheme = { apply: applySolosTheme };
+  function setTheme(patch) {
+    const t = readTheme();
+    if (patch.screen !== undefined) t.screen = patch.screen;
+    if (patch.hue !== undefined) t.hue = patch.hue;
+    if (patch.bg !== undefined) t.bg = patch.bg;
+    if (patch.bgHue !== undefined) t.bgHue = patch.bgHue;
+    if (patch.bgScope !== undefined) t.bgScope = patch.bgScope;
+    // this device only, and only for the room you are standing in
+    try {
+      localStorage.setItem(themeKey(), JSON.stringify(t));
+      localStorage.setItem('ivr:theme', JSON.stringify(t));
+    } catch (e) {}
+    applySolosTheme();
+  }
+
+  // every .solos-item lands at its own angle, staggered — the sfpc door
+  function postBills(host) {
+    const items = host.querySelectorAll('.solos-item');
+    for (let i = 0; i < items.length; i++) {
+      items[i].style.setProperty('--tilt', (Math.random() * 8 - 4).toFixed(2) + 'deg');
+      items[i].style.setProperty('--in', (i * 110) + 'ms');
+    }
+  }
+  function bigItem(host, label, opts) {
+    opts = opts || {};
+    const el = document.createElement(opts.href ? 'a' : 'button');
+    el.className = 'solos-item' + (opts.small ? ' small' : '') + (opts.current ? ' current' : '');
+    el.innerHTML = label + (opts.sub ? '<span class="sub">' + opts.sub + '</span>' : '');
+    if (opts.href) el.href = opts.href;
+    if (opts.onClick) el.addEventListener('click', opts.onClick);
+    host.appendChild(el);
+    return el;
+  }
+  function secHead(host, label) {
+    const h = document.createElement('div');
+    h.className = 'solos-sec-h';
+    h.textContent = label;
+    host.appendChild(h);
+  }
+  function actionBtn(label, sub, onClick, href) {
+    const el = document.createElement(href ? 'a' : 'button');
+    el.className = 'pipe-tab-action';
+    el.innerHTML = label + (sub ? '<span class="sub">' + sub + '</span>' : '');
+    if (href) el.href = href;
+    if (onClick) el.addEventListener('click', onClick);
+    return el;
+  }
+
+  async function enterRoom(id) {
+    activeClass = id || '';
+    try {
+      localStorage.setItem('sdj-active-class', activeClass);
+      const t = localStorage.getItem(themeKey());
+      if (t) localStorage.setItem('ivr:theme', t);
+    } catch (e) {}
+    applySolosTheme();
+    openScreen(null);
+    handQueue = [];
+    await SDJ.loadSequence(activeClass || null);
+    lastSig = '';
+    await paint();
+    renderHand();
+  }
+  function renderPagesScreen() {
+    pagesScreen.innerHTML = '';
+    const inner = document.createElement('div');
+    inner.className = 'solos-screen-inner';
+    inner.innerHTML = '<div class="solos-screen-head"><span class="t">SOLOS</span></div>';
+    bigItem(inner, 'Dream Journaling', { current: !activeClass,
+      onClick: () => enterRoom('') });
+    for (const cl of myClasses) {
+      bigItem(inner, cl.name, { small: true, current: activeClass === cl.id,
+        onClick: () => enterRoom(cl.id) });
+    }
+    if (role === 'admin') {
+      bigItem(inner, 'your rhythm', { small: true, onClick: () => { openScreen(null); enterAdmin(); } });
+    }
+    pagesScreen.appendChild(inner);
+    postBills(inner);
+  }
+
+  // the Menu screen: the box slides all the way down and every item shows
+  function renderMenuScreen() {
+    menuScreen.innerHTML = '';
+    const inner = document.createElement('div');
+    inner.className = 'solos-screen-inner';
+    inner.innerHTML = '<div class="solos-screen-head"><span class="t">Menu</span></div>';
+
+    secHead(inner, 'screen');
+    const th = readTheme();
+    const scr = themeScreenOf(th);
+    bigItem(inner, 'cathode ray', { small: true, current: scr === 'crt',
+      onClick: () => { setTheme({ screen: 'crt' }); openScreen('menu'); } });
+    bigItem(inner, 'liquid crystal', { small: true, current: scr === 'lcd',
+      onClick: () => { setTheme({ screen: 'lcd' }); openScreen('menu'); } });
+    secHead(inner, 'background');
+    const curBg = readTheme().bg || 'off';
+    SDJGround.BGS.forEach((b) => {
+      bigItem(inner, b.label, { small: true, current: curBg === b.key,
+        onClick: () => {
+          setTheme(b.hue === null ? { bg: b.key } : { bg: b.key, bgHue: b.hue });
+          openScreen('menu');
+        } });
+    });
+    const scopeNow = readTheme().bgScope === 'everywhere';
+    bigItem(inner, 'home screen only', { small: true, current: !scopeNow,
+      onClick: () => { setTheme({ bgScope: 'home' }); openScreen('menu'); } });
+    bigItem(inner, 'every page', { small: true, current: scopeNow,
+      onClick: () => { setTheme({ bgScope: 'everywhere' }); openScreen('menu'); } });
+    const bgHueRow = document.createElement('div');
+    bgHueRow.className = 'solos-hue';
+    bgHueRow.innerHTML = '<div class="lab">background color · 0 is monochrome</div>' +
+      '<input type="range" min="0" max="360" step="5" value="' +
+      (readTheme().bgHue != null ? parseInt(readTheme().bgHue, 10) : 0) + '" aria-label="Background color">';
+    bgHueRow.querySelector('input').addEventListener('input', function () {
+      setTheme({ bgHue: parseInt(this.value, 10) || 0 });
+    });
+    inner.appendChild(bgHueRow);
+    const hueRow = document.createElement('div');
+    hueRow.className = 'solos-hue';
+    hueRow.innerHTML = '<div class="lab">object color · 0 is monochrome</div>' +
+      '<input type="range" min="0" max="360" step="5" value="' + (parseInt(th.hue, 10) || 0) + '" aria-label="Screen color">';
+    hueRow.querySelector('input').addEventListener('input', function () {
+      setTheme({ hue: parseInt(this.value, 10) || 0 });
+    });
+    inner.appendChild(hueRow);
+
+    const acts = document.createElement('div');
+    acts.className = 'pipe-tab-actions';
+    acts.appendChild(actionBtn('Tutorial', 'watch a whole day play out on the wheel',
+      () => { openScreen(null); setTimeout(startTutorial, 420); }));
+    acts.appendChild(actionBtn('Replay the welcome', 'walk the introduction again',
+      () => { location.href = './welcome.html?replay=1'; }));
+    inner.appendChild(acts);
+
+    const stats = document.createElement('div');
+    stats.className = 'pipe-tab-stats';
+    stats.innerHTML =
+      '<div class="st"><span class="v" id="statDays">—</span><span class="k">days</span></div>' +
+      '<div class="st"><span class="v" id="statRecs">—</span><span class="k">recordings</span></div>';
+    inner.appendChild(stats);
+    if (user) SDJ.stats().then((s) => {
+      stats.querySelector('#statDays').textContent = s.days;
+      stats.querySelector('#statRecs').textContent = s.recordings;
+    });
+
+    menuScreen.appendChild(inner);
+    postBills(inner);
+  }
+
+  function anyScreenOpen() {
+    return menuScreen.classList.contains('open') || pagesScreen.classList.contains('open') ||
+      adminScreen.classList.contains('open');
+  }
+  function openScreen(which) {
+    const wantMenu = which === 'menu';
+    const wantPages = which === 'pages';
+    const wantAdmin = which === 'admin';
+    if (wantMenu) renderMenuScreen();
+    if (wantPages) renderPagesScreen();
+    if (wantAdmin) renderAdminScreen();
+    menuScreen.classList.toggle('open', wantMenu);
+    pagesScreen.classList.toggle('open', wantPages);
+    adminScreen.classList.toggle('open', wantAdmin);
+    const stage = wantAdmin ? 'list' : (adminMode && adminSel) ? 'spec' : '';
+    document.body.dataset.admin = stage;
+    $('leftBtn').textContent = (wantMenu || wantAdmin) ? '×'
+      : stage === 'spec' ? 'activities' : 'menu';
+    $('rightBtn').textContent = wantPages ? '×'
+      : (stage === 'spec') ? 'save' : 'SOLOS';
+    $('leftBtn').classList.toggle('xOnly', $('leftBtn').textContent === '×');
+    $('rightBtn').classList.toggle('xOnly', $('rightBtn').textContent === '×');
+    $('rightBtn').style.color = (stage === 'spec' && !anyScreenOpen()) ? 'var(--amber)' : '';
+    if (wantMenu || wantPages || wantAdmin) {
+      const el = wantMenu ? menuScreen : wantAdmin ? adminScreen : pagesScreen;
+      // SOLOS drops the box a step; Menu and Admin send it all the way down
+      const cap = wantPages ? Math.round(window.innerHeight * 0.25) : window.innerHeight - 64;
+      const h = Math.min(el.scrollHeight + 16, cap);
+      el.style.height = h + 'px';
+      document.documentElement.style.setProperty('--solos-push', h + 'px');
+      document.body.classList.add('solos-push');
+    } else {
+      document.body.classList.remove('solos-push');
+    }
+  }
+  $('leftBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (tutorialOn) { endTutorial(); return; }
+    const stage = document.body.dataset.admin || '';
+    if (stage === 'list') { exitAdmin(); return; }
+    if (stage === 'spec') { showActivities(); return; }
+    if (seqActive || panel.classList.contains('open') ||
+        $('library').classList.contains('open')) { runBack(); return; }
+    openScreen(menuScreen.classList.contains('open') ? null : 'menu');
+  });
+  $('rightBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if ((document.body.dataset.admin || '') === 'spec' && !anyScreenOpen()) { saveAdmin(); return; }
+    if (seqActive) { runForward(); return; }
+    if (panel.classList.contains('open') || $('library').classList.contains('open')) {
+      closePanel(); toggleLibrary(false); refreshCorners(); return;
+    }
+    openScreen(pagesScreen.classList.contains('open') ? null : 'pages');
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (adminScreen.classList.contains('open')) { exitAdmin(); return; }
+    if (menuScreen.classList.contains('open') || pagesScreen.classList.contains('open')) openScreen(null);
+  });
+  document.body.addEventListener('click', (e) => {
+    if (e.target.closest('.solos-screen') || e.target.closest('.solos-corner')) return;
+    if (document.body.dataset.admin) return;   // admin holds its own ground
+    if (menuScreen.classList.contains('open') || pagesScreen.classList.contains('open')) openScreen(null);
+  });
+
+  // ── admin, in the main screen: the activities fill the sky, the box
+  //    drops away, and a chosen one returns with its specifications ──
+  let adminBank = [], adminItems = [], adminRemoved = [],
+      adminSel = null, adminDirty = false, adminDragging = false;
+  async function showActivities() {
+    if (!adminBank.length) { await enterAdmin(); return; }
+    adminMode = true;
+    document.body.classList.add('adminOn');
+    openScreen('admin');
+  }
+  async function enterAdmin() {
+    if (!user) { askSignIn(); return; }
+    const bank = await c.from('sdj_exercises').select('*').order('for_facilitator').order('created_at');
+    adminBank = bank.data || [];
+    // the open rhythm is the Dream Journal class in Oral Histories: its cards
+    // are what this screen lays out, and what it writes back to
+    const byKey = (k) => adminBank.find((b) => b.key === k) || adminBank.find((b) => b.kind === k);
+    const { data: seq } = await c.rpc('oh_sequence', { cid: SDJ.OH_CLASS });
+    adminItems = (seq || []).map((r) => ({
+      card: r.card_id, exercise: byKey(r.sdj_kind), section: r.section, slot: r.slot,
+      dur_h: r.dur_h, cadence_n: r.cadence_n, cadence_unit: r.cadence_unit,
+      rotate: r.rotate, ring: r.ring || 0,
+    })).filter((x) => x.exercise);
+    adminRemoved = [];
+    adminSel = null;
+    adminDirty = false;
+    adminMode = true;
+    document.body.classList.add('adminOn');
+    openScreen('admin');
+  }
+  function renderAdminScreen() {
+    adminScreen.innerHTML = '';
+    const inner = document.createElement('div');
+    inner.className = 'solos-screen-inner';
+    inner.innerHTML = '<div class="solos-screen-head"><span class="t">Activities</span></div>';
+    for (const b of adminBank) {
+      const placed = adminItems.some((x) => x.exercise.id === b.id);
+      const it = bigItem(inner, b.label, { small: true, onClick: () => adminPick(b) });
+      if (!placed) it.style.opacity = '0.5';
+    }
+    adminScreen.appendChild(inner);
+    postBills(inner);
+  }
+  function adminSectionFor(hour) {
+    const sections = SDJ.sectionsToday();
+    const h24 = ((hour % 24) + 24) % 24;
+    for (let i = 0; i < sections.length; i++) {
+      const s = sections[i];
+      const s24 = ((s.start % 24) + 24) % 24, d = s.end - s.start;
+      if ((h24 >= s24 && h24 < s24 + d) || (h24 + 24 >= s24 && h24 + 24 < s24 + d)) {
+        return { index: i, within: ((((h24 - s24) % 24) + 24) % 24) / d };
+      }
+    }
+    return { index: 0, within: 0.5 };
+  }
+  function adminPick(b) {
+    let it = adminItems.find((x) => x.exercise.id === b.id);
+    if (!it) {
+      const at = adminSectionFor(SDJ.nowHour());
+      it = { exercise: b, section: at.index, slot: Math.max(0, Math.min(0.9, at.within)),
+        dur_h: 1.0, cadence_n: 1, cadence_unit: 'days', rotate: false,
+        ring: adminItems.length % 3 };
+      adminItems.push(it);
+      adminDirty = true;
+      status('Added at this hour. Tune it, then save.');
+    }
+    adminSel = it;
+    openScreen(null);
+    adminRenderWheel();
+    adminCard();
+    document.body.dataset.admin = 'spec';
+    $('leftBtn').textContent = 'activities';
+    $('rightBtn').textContent = 'save';
+    $('rightBtn').style.color = 'var(--amber)';
+    $('timing').textContent = '';
+  }
+  function adminWindows() {
+    const sections = SDJ.sectionsToday();
+    return adminItems.map((it) => {
+      const sec = sections[it.section % 8];
+      return { kind: it.exercise.kind, label: it.exercise.label,
+        start: sec.start + it.slot * (sec.end - sec.start), durH: it.dur_h,
+        ring: it.ring || 0, red: it.exercise.for_facilitator, _it: it };
+    });
+  }
+  function adminRenderWheel() {
+    const wins = adminWindows();
+    SDJ.renderWheel(wheelSvg, { windows: wins, hour: SDJ.nowHour(), r: 260, done: doneSet,
+      inkHue: parseInt(readTheme().hue, 10) || 0 });
+    const stars = wheelSvg.querySelectorAll('circle[data-kind]');
+    wins.forEach((w, i) => {
+      if (w._it === adminSel && stars[i]) {
+        stars[i].setAttribute('stroke', '#ffffff');
+        stars[i].setAttribute('stroke-width', '2.5');
+        stars[i].setAttribute('r', '10');
+      }
+    });
+  }
+  function aBtn(t, fn, cls) {
+    const b = document.createElement('button');
+    b.textContent = t;
+    if (cls) b.className = cls;
+    b.addEventListener('click', (e) => { e.stopPropagation(); fn(b); });
+    return b;
+  }
+  function aCtl(label, kids) {
+    const d = document.createElement('div');
+    d.className = 'ctl';
+    if (label) {
+      const s = document.createElement('span');
+      s.textContent = label;
+      d.appendChild(s);
+    }
+    kids.forEach((k) => d.appendChild(k));
+    return d;
+  }
+  function aVal(t) {
+    const v = document.createElement('span');
+    v.className = 'val';
+    v.textContent = t;
+    return v;
+  }
+  function adminCard() {
+    const it = adminSel;
+    if (!it) return;
+    const bar = $('actBar');
+    bar.classList.add('adminBar');
+    bar.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'icard';
+    card.innerHTML = '<div class="ttl">' + it.exercise.label + '</div>';
+    const mark = () => { adminDirty = true; adminRenderWheel(); adminCard(); };
+    const row1 = document.createElement('div');
+    row1.className = 'ctlRow';
+    row1.appendChild(aCtl('every', [
+      aBtn('−', () => { it.cadence_n = Math.max(1, it.cadence_n - 1); mark(); }),
+      aVal(it.cadence_n),
+      aBtn('+', () => { it.cadence_n += 1; mark(); }),
+      aBtn(it.cadence_unit, () => { it.cadence_unit = it.cadence_unit === 'days' ? 'weeks' : 'days'; mark(); }),
+    ]));
+    row1.appendChild(aCtl('for', [
+      aBtn('−', () => { it.dur_h = Math.max(0.5, it.dur_h - 0.5); mark(); }),
+      aVal(it.dur_h + 'h'),
+      aBtn('+', () => { it.dur_h = Math.min(6, it.dur_h + 0.5); mark(); }),
+    ]));
+    const row2 = document.createElement('div');
+    row2.className = 'ctlRow';
+    if (false) {
+      const rot = aBtn(it.rotate ? 'taking turns' : 'everyone, every time',
+        () => { it.rotate = !it.rotate; mark(); });
+      if (it.rotate) rot.classList.add('on');
+      row2.appendChild(aCtl('who', [rot]));
+    }
+    const inp = document.createElement('input');
+    inp.type = 'time';
+    const sections = SDJ.sectionsToday();
+    const sec = sections[it.section % 8];
+    const startH = (((sec.start + it.slot * (sec.end - sec.start)) % 24) + 24) % 24;
+    let hh = Math.floor(startH), mm = Math.round((startH % 1) * 60);
+    if (mm === 60) { mm = 0; hh = (hh + 1) % 24; }
+    inp.value = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+    inp.addEventListener('change', () => {
+      const parts = inp.value.split(':').map(Number);
+      if (parts.length < 2 || isNaN(parts[0])) return;
+      const at = adminSectionFor(parts[0] + parts[1] / 60);
+      it.section = at.index;
+      it.slot = Math.max(0, Math.min(0.99, at.within));
+      mark();
+    });
+    row2.appendChild(aCtl('at', [inp]));
+    const yr = new Date().getFullYear();
+    const onDate = (d) => {
+      const secs = SDJ.sectionsOn(d);
+      const sec = secs[it.section % 8];
+      return SDJ.fmtWindow({ start: sec.start + it.slot * (sec.end - sec.start), durH: it.dur_h });
+    };
+    const hinge = document.createElement('div');
+    hinge.className = 'inote';
+    hinge.innerHTML = 'today · ' + onDate(new Date()) +
+      '<br>equinox · ' + onDate(new Date(yr, 2, 20)) +
+      '<br>solstice · ' + onDate(new Date(yr, 5, 21));
+    card.appendChild(hinge);
+    const row3 = document.createElement('div');
+    row3.className = 'ctlRow';
+    let armed = null;
+    row3.appendChild(aCtl('', [aBtn('remove', (btn) => {
+      if (!armed) {
+        armed = setTimeout(() => { armed = null; btn.textContent = 'remove'; btn.classList.remove('confirm'); }, 3500);
+        btn.textContent = 'really remove?';
+        btn.classList.add('confirm');
+        return;
+      }
+      clearTimeout(armed);
+      if (it.id) adminRemoved.push(it.id);
+      adminItems = adminItems.filter((x) => x !== it);
+      adminDirty = true;
+      adminSel = null;
+      adminRenderWheel();
+      openScreen('admin');
+    }, 'danger')]));
+    card.appendChild(row1);
+    card.appendChild(row2);
+    card.appendChild(row3);
+    bar.appendChild(card);
+  }
+  async function saveAdmin() {
+    $('rightBtn').textContent = 'saving…';
+    try {
+      // written back as cards of the Dream Journal class in Oral Histories: an
+      // exercise taken off the wheel steps out of the rhythm, one newly laid
+      // down becomes a card
+      const { data: out, error } = await c.rpc('oh_sequence_save', {
+        cid: SDJ.OH_CLASS,
+        items: adminItems.map((it) => ({
+          card_id: it.card || null, sdj_kind: it.exercise.key || it.exercise.kind,
+          label: it.exercise.label, note: it.exercise.note || '',
+          for_facilitator: !!it.exercise.for_facilitator,
+          section: it.section, slot: it.slot, dur_h: it.dur_h, cadence_n: it.cadence_n,
+          cadence_unit: it.cadence_unit, rotate: it.rotate, ring: it.ring || 0,
+          rhythm: true, active: true,
+        })),
+      });
+      if (error) throw error;
+      if (out && out.error) throw new Error(out.error);
+      adminRemoved = [];
+      adminDirty = false;
+      status('Saved. The wheel follows.');
+      await SDJ.loadSequence();
+      exitAdmin();
+    } catch (e2) {
+      status('Save: ' + e2.message);
+      $('rightBtn').textContent = 'save';
+    }
+  }
+  function exitAdmin() {
+    adminMode = false;
+    adminBank = [];
+    document.body.dataset.admin = '';
+    document.body.classList.remove('adminOn');
+    adminSel = null;
+    $('actBar').classList.remove('adminBar');
+    $('leftBtn').textContent = 'menu';
+    $('rightBtn').textContent = 'SOLOS';
+    $('rightBtn').style.color = '';
+    menuScreen.classList.remove('open');
+    pagesScreen.classList.remove('open');
+    adminScreen.classList.remove('open');
+    document.body.classList.remove('solos-push');
+    lastSig = '';
+    paint();
+  }
+
+  // ── the wheel, the section bar, the timing, and the activity card ──
+  // Windows come from the solar sections plus personal calibration, so
+  // the bar and the stars move with the seasons and with the dreamer.
+  // Hold and drag on the wheel to read any hour; let go to snap home.
+  async function refreshDone() {
+    if (!user) { doneSet = new Set(); return; }
+    const day = new Date().toISOString().slice(0, 10);
+    const { data } = await SDJ.client().from('sdj_activities')
+      .select('kind').eq('user_id', user.id).eq('day', day);
+    doneSet = new Set((data || []).map((r) => r.kind));
+  }
+  function sectionAt(hour) {
+    const h24 = ((hour % 24) + 24) % 24;
+    return SDJ.sectionsToday().find((s) => {
+      const s24 = ((s.start % 24) + 24) % 24, d = s.end - s.start;
+      return (h24 >= s24 && h24 < s24 + d) || (h24 + 24 >= s24 && h24 + 24 < s24 + d);
+    });
+  }
+  function showAt(hour) {
+    showAtInner(hour);
+    const bar = $('actBar'), board = $('board');
+    if (!board) return;
+    const live = bar.querySelector('.flashCard:not(.quiet):not(.mat)');
+    const held = bar.querySelector('.flashCard:not(.mat)');
+    board.classList.toggle('live', !!live);
+    board.classList.toggle('quiet', !live && !!held);
+  }
+  function showAtInner(hour) {
+    if (adminMode || tutorialOn) return;
+    if (pileOpen && pilePick !== null) {
+      const st = handState();
+      const rows = st.played.slice().reverse();
+      const pl = rows[pilePick];
+      if (pl) {
+        const sig = 'p:' + pilePick + ':' + pl.at;
+        if (sig === lastSig) return;
+        lastSig = sig;
+        const when = new Date(pl.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        $('timing').textContent = '';
+        const bar = $('actBar');
+        bar.innerHTML = '';
+        const card = document.createElement('div');
+        card.className = 'flashCard quiet';
+        card.innerHTML = pl.label + '<small>played at ' + when +
+          (pl.path ? ' · tap to hear it' : '') + '</small>';
+        if (pl.path) {
+          card.style.cursor = 'pointer';
+          card.onclick = async () => {
+            try { new Audio(await SDJ.audioUrl(pl.path)).play(); } catch (e2) {}
+          };
+        }
+        bar.appendChild(card);
+        return;
+      }
+    }
+    const chosen = queuedCard();
+    if (chosen && !seqActive) {
+      const sig = 'q:' + chosen.key + ':' + handQueue.length + ':' + (scrubbing ? 1 : 0);
+      if (sig === lastSig) return;
+      lastSig = sig;
+      $('timing').textContent = '';
+      const bar = $('actBar');
+      bar.innerHTML = '';
+      const card = document.createElement('div');
+      card.className = 'flashCard';
+      const extra = (chosen.left !== null && chosen.left !== undefined)
+        ? '<small>' + chosen.left + ' left today</small>' : '';
+      card.innerHTML = '<button class="fcGo">tap to<br>begin</button>' +
+        '<span class="fcName">' + chosen.label + extra + '</span>';
+      card.onclick = () => beginRun();
+      bar.appendChild(card);
+      return;
+    }
+    if (seqActive) return;
+    const sec = sectionAt(hour);
+    void sec;
+    const plain = lastWindows.filter((w) => !w.red);
+    const currents = SDJ.currentActivities(plain, hour);
+    // at rest the rectangle is only a mat; the cards carry the day
+    if (!scrubbing) {
+      if (lastSig === 'mat') return;
+      lastSig = 'mat';
+      $('timing').textContent = '';
+      const bar = $('actBar');
+      bar.innerHTML = '';
+      const mat = document.createElement('div');
+      mat.className = 'flashCard mat';
+      bar.appendChild(mat);
+      return;
+    }
+    // the star under the finger is the star the mat speaks for
+    const pick = (list) => {
+      if (!list.length) return null;
+      let best = list[0], bd = 1e9;
+      for (const w of list) {
+        const mid = ((w.start + w.durH / 2) % 24 + 24) % 24;
+        let d = Math.abs(mid - (((hour % 24) + 24) % 24));
+        if (d > 12) d = 24 - d;
+        d += Math.abs((w.ring || 0) - scrubTrack) * 0.9;
+        if (d < bd) { bd = d; best = w; }
+      }
+      return best;
+    };
+    const act = pick(currents) || SDJ.nextActivity(plain, hour);
+    const done = act ? doneSet.has(act.kind) : false;
+    const liveNow = act ? SDJ.currentActivities(lastWindows, SDJ.nowHour()).includes(act) : false;
+    const timingText = act
+      ? (currents.length ? '' : 'next window · ') + SDJ.fmtWindow(act)
+      : '';
+    // rebuild only when something shown actually changed, so the glow
+    // never restarts mid-breath and nothing ever doubles
+    const sig = [sec && sec.name, act && act.kind, done, liveNow, timingText].join('|');
+    if (sig === lastSig) return;
+    lastSig = sig;
+    $('timing').textContent = timingText;
+    const bar = $('actBar');
+    bar.innerHTML = '';
+    if (!act) return;
+    const card = document.createElement('div');
+    // the card glows until the activity is done, then rests
+    card.className = 'flashCard' + (liveNow && !done ? '' : ' quiet');
+    card.innerHTML = (liveNow
+        ? '<button class="fcGo">tap to<br>begin</button>'
+        : '<button class="fcGo gold">' + (done ? 'done<br>today' : 'not yet<br>today') + '</button>') +
+      '<span class="fcName">' + act.label + '</span>';
+    card.onclick = () => openPanel(act);
+    if (!liveNow) card.style.cursor = 'default';
+    bar.appendChild(card);
+  }
+  function renderTheWheel(hour) {
+    SDJ.renderWheel($('wheel'), { windows: lastWindows, hour, r: 260, done: doneSet,
+      inkHue: parseInt(readTheme().hue, 10) || 0 });
+  }
+  async function paint() {
+    if (painting || tutorialOn) return;
+    painting = true;
+    try {
+      lastWindows = await SDJ.windowsToday();
+      await refreshDone();
+      const hour = SDJ.nowHour();
+      if (!scrubbing && !unwinding && !adminMode) {
+        renderTheWheel(hour);
+        showAt(hour);
+        renderHand();
+      }
+    } finally { painting = false; }
+  }
+  fitStage();
+  paint();
+  setTimeout(() => { fitStage(); layoutBoard(); }, 300);
+  setInterval(paint, 30000);
+  applySolosTheme();
+
+  // scrubbing: hold anywhere on the wheel and the bars read that hour
+  const wheelSvg = $('wheel');
+  // which of the three tracks the finger is nearest, out from the centre
+  function nearestTrack(e) {
+    const r = wheelSvg.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2);
+    const dy = e.clientY - (r.top + r.height * 0.5422);
+    const rad = Math.hypot(dx, dy) / (r.width * 0.5) * 1.6;
+    let best = 0, bd = 1e9;
+    (SDJ.RING_R || [0.42, 0.545, 0.67]).forEach((rr, i) => {
+      const d = Math.abs(rad - rr);
+      if (d < bd) { bd = d; best = i; }
+    });
+    return best;
+  }
+  function scrubHour(e) {
+    const r = wheelSvg.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2);
+    const dy = e.clientY - (r.top + r.height * 0.5422);
+    const ang = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
+    return ang / 360 * 24;
+  }
+  // the hand follows the finger like winding a clock; on iOS every
+  // hour crossed gives a small tick through the shell's haptics
+  const haptic = (kind) => {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.haptic) {
+      window.webkit.messageHandlers.haptic.postMessage(kind);
+    }
+  };
+  let lastTickHour = null;
+  const windTo = (h) => {
+    scrubShown = h;
+    const whole = Math.floor(((h % 24) + 24) % 24);
+    if (lastTickHour !== null && whole !== lastTickHour) haptic('tick');
+    lastTickHour = whole;
+    renderTheWheel(h);
+    showAt(h);
+  };
+  let scrubTrack = 0;
+  wheelSvg.addEventListener('pointerdown', (e) => {
+    if (!adminMode) scrubTrack = nearestTrack(e);
+    if (adminMode) {
+      // in admin, a tap picks the nearest star
+      e.preventDefault();
+      const wins = adminWindows();
+      if (!wins.length) return;
+      const r = wheelSvg.getBoundingClientRect();
+      let best = null, bd = 1e9;
+      for (const w of wins) {
+        const mid = w.start + w.durH / 2;
+        const ang = ((((mid % 24) + 24) % 24) / 24 * 360 - 90) * Math.PI / 180;
+        const rr = SDJ.wheelRingFor(wins, w, 260);
+        const vx = 180 + rr * Math.cos(ang), vy = 180 + rr * Math.sin(ang);
+        const x = r.left + (vx + 144) / 648 * r.width, y = r.top + (vy + 154) / 616 * r.height;
+        let d = Math.hypot(e.clientX - x, e.clientY - y);
+        // the one already in hand keeps the advantage when stars stack
+        if (w._it === adminSel) d -= r.width * 0.05;
+        if (d < bd) { bd = d; best = w; }
+      }
+      if (best && bd < r.width * 0.16) {
+        adminSel = best._it;
+        adminDragging = true;
+        try { wheelSvg.setPointerCapture(e.pointerId); } catch (err) {}
+        haptic('tick');
+        adminRenderWheel();
+        adminCard();
+      }
+      return;
+    }
+    scrubbing = true;
+    unwinding = false;
+    try { wheelSvg.setPointerCapture(e.pointerId); } catch (err) {}
+    haptic('grab');
+    lastTickHour = null;
+    windTo(scrubHour(e));
+    e.preventDefault();
+  });
+  wheelSvg.addEventListener('pointermove', (e) => {
+    if (adminMode) {
+      if (!adminDragging || !adminSel) return;
+      const at = adminSectionFor(scrubHour(e));
+      const track = nearestTrack(e);
+      const moved = at.index !== adminSel.section ||
+        Math.abs(at.within - adminSel.slot) > 0.004 || track !== (adminSel.ring || 0);
+      if (moved) {
+        adminSel.section = at.index;
+        adminSel.slot = Math.max(0, Math.min(0.99, at.within));
+        if (track !== (adminSel.ring || 0)) { adminSel.ring = track; haptic('tick'); }
+        adminDirty = true;
+        adminRenderWheel();
+        adminCard();
+      }
+      return;
+    }
+    if (scrubbing) { scrubTrack = nearestTrack(e); windTo(scrubHour(e)); }
+  });
+  wheelSvg.addEventListener('pointerup', () => { adminDragging = false; });
+  wheelSvg.addEventListener('pointercancel', () => { adminDragging = false; });
+  const endScrub = () => {
+    if (!scrubbing) return;
+    scrubbing = false;
+    const els = [$('timing'), $('actBar')];
+    els.forEach((el) => { el.style.opacity = 0.3; });
+    // the hand unwinds home along the short way, easing out
+    const from = scrubShown != null ? scrubShown : SDJ.nowHour();
+    const to = SDJ.nowHour();
+    const delta = ((((to - from) % 24) + 36) % 24) - 12;
+    const t0 = performance.now(), dur = 500;
+    unwinding = true;
+    const step = (t) => {
+      if (scrubbing || !unwinding) return;
+      const k = Math.min(1, (t - t0) / dur);
+      const ease = 1 - Math.pow(1 - k, 3);
+      renderTheWheel(from + delta * ease);
+      if (k < 1) { requestAnimationFrame(step); return; }
+      unwinding = false;
+      scrubShown = null;
+      haptic('home');
+      showAt(to);
+      els.forEach((el) => { el.style.opacity = 1; });
+    };
+    requestAnimationFrame(step);
+  };
+  wheelSvg.addEventListener('pointerup', endScrub);
+  wheelSvg.addEventListener('pointercancel', endScrub);
+
+  // best-effort local notification for the next window while the page is open
+  if ('Notification' in window && Notification.permission === 'default') {
+    setTimeout(() => Notification.requestPermission(), 4000);
+  }
+
+  // ── activity panels: one simple screen each, same theme ──
+  const panel = $('panel');
+  function closePanel() {
+    if (typeof stopStages === 'function') stopStages();
+    panel.classList.remove('open');
+    panel.innerHTML = '';
+    if (typeof refreshCorners === 'function') refreshCorners();
+    paint();
+  }
+  function shell(title, note) {
+    panel.innerHTML = '<h2>' + title + '</h2>' + (note ? '<div class="note">' + note + '</div>' : '');
+    panel.classList.add('open');
+    if (typeof refreshCorners === 'function') refreshCorners();
+    // the corners carry you out; no page wears its own way back
+    const back = document.createElement('span');
+    back.style.display = 'none';
+    return { back };
+  }
+
+  async function openPanel(act) {
+    // each door opens only during its own window
+    const openNow = SDJ.currentActivities(lastWindows, SDJ.nowHour())
+      .some((w) => w.kind === act.kind);
+    const keeper = typeof canCheck === 'function' && canCheck();
+    if (!openNow) {
+      const w = lastWindows.find((x) => x.kind === act.kind) || act;
+      if (!keeper) {
+        status('This window is ' + SDJ.fmtWindow(w) + '. It opens then.');
+        setTimeout(() => status(''), 3000);
+        return;
+      }
+      // whoever keeps the room may open any door, to see what it holds
+      status('This window is ' + SDJ.fmtWindow(w) + '. You hold the keys.');
+      setTimeout(() => status(''), 3000);
+    }
+    // the activities keep your recordings, so their door is the sign-in
+    if (!user) {
+      askSignIn();
+      return;
+    }
+    if (act.kind === 'speak') return speakPanel(act, 'spoken', 'Speak your dream');
+    if (act.kind === 'add') return addPanel(act);
+    if (act.kind === 'reflect') return reflectPanel(act);
+    if (act.kind === 'listen_back') return listenPanel(act);
+    if (act.kind === 'listen_others') return listenOthersPanel(act);
+    if (act.kind === 'read_other') return readOtherPanel(act, 'read_aloud', 'Read this dream aloud');
+    if (act.kind === 'speak_other') return readOtherPanel(act, 'speak_other', "Speak someone else's dream");
+    if (act.kind === 'prompt_share') return promptPanel(act);
+    if (act.kind === 'instruction') return instructionPanel(act);
+  }
+
+  function recorderUI(onSaved, kind, parentId) {
+    const holder = document.createElement('div');
+    const stage = SDJStage.record(holder, {
+      onBlob: async (blob) => {
+        let transcript = '';
+        try {
+          if (SDJ.transcribeNative && window.webkit && window.webkit.messageHandlers &&
+              window.webkit.messageHandlers.transcribe) {
+            transcript = (await SDJ.transcribeNative(blob)) || '';
+          }
+        } catch (e) {}
+        const row = await SDJ.saveDream(blob, kind, parentId, transcript);
+        attachPlayedDream(row && row.id, row && row.audio_path);
+        if (onSaved) await onSaved(row);
+      },
+    });
+    panelStages.push(stage);
+    return { btn: holder, clock: document.createElement('span') };
+  }
+
+  function speakPanel(act, kind, title) {
+    const { back } = shell(title, act.note);
+    const r = recorderUI(async () => {
+      await SDJ.logActivity(act.kind, {});
+      status('spoken and kept');
+    }, kind, null);
+    panel.appendChild(r.btn); panel.appendChild(r.clock); panel.appendChild(back);
+  }
+
+  async function listenPanel(act) {
+    shell(act.label, act.note);
+    const mine = await c.from('sdj_dreams').select('*').eq('user_id', user.id)
+      .order('created_at', { ascending: false }).limit(12);
+    openListening((mine.data || []).filter((d) => d.audio_path), 'listen_back');
+  }
+  const panelStages = [];
+  function stopStages() {
+    while (panelStages.length) {
+      const s = panelStages.pop();
+      try { s.stop(); } catch (e) {}
+    }
+  }
+  function openListening(rows, kindLogged, windowMinutes) {
+    if (!rows.length) {
+      panel.appendChild(Object.assign(document.createElement('div'), {
+        className: 'note', textContent: 'Nothing to hear yet. Speak a dream and it lands here.' }));
+      return;
+    }
+    const stage = SDJStage.listen(panel, {
+      tracks: rows,
+      window: windowMinutes || null,
+      urlFor: (t) => SDJ.audioUrl(t.audio_path),
+      onHeard: (t) => {
+        SDJ.logActivity(kindLogged || 'listen_back', {
+          dream: t.id, of: t.user_id === user.id ? 'mine' : 'other' });
+      },
+      onDone: () => { stopStages(); runForward(); },
+    });
+    panelStages.push(stage);
+  }
+
+  // The afternoon window: the dreams spoken for you, and seeds while the
+  // cohort fills.
+  async function listenOthersPanel(act) {
+    shell(act.label, act.note);
+    const swapped = await c.from('sdj_swaps').select('*, sdj_dreams(*)')
+      .eq('to_user', user.id).eq('kind', 'listen').limit(12);
+    const rows = [];
+    for (const s of (swapped.data || [])) if (s.sdj_dreams) rows.push(s.sdj_dreams);
+    if (!rows.length) {
+      const seeds = await c.from('sdj_dreams').select('*').eq('is_seed', true).limit(6);
+      for (const d of (seeds.data || [])) rows.push(d);
+    }
+    openListening(rows.filter((d) => d.audio_path), 'listen_back');
+  }
+
+  async function addPanel(act) {
+    const { back } = shell(act.label, act.note);
+    const mine = await c.from('sdj_dreams').select('*').eq('user_id', user.id)
+      .eq('kind', 'spoken').order('created_at', { ascending: false }).limit(1);
+    const parent = mine.data && mine.data[0];
+    if (!parent) {
+      panel.appendChild(Object.assign(document.createElement('div'), { className: 'note', textContent: 'Speak a dream first; then there is something to add to.' }));
+      panel.appendChild(back);
+      return;
+    }
+    const row = document.createElement('div');
+    row.className = 'listRow';
+    row.innerHTML = '<span class="nm">Listen back first · ' + parent.day + '</span>';
+    const play = document.createElement('button');
+    play.textContent = 'play';
+    play.onclick = async () => { new Audio(await SDJ.audioUrl(parent.audio_path)).play(); };
+    row.appendChild(play);
+    panel.appendChild(row);
+    const r = recorderUI(async () => { await SDJ.logActivity('add', { parent: parent.id }); }, 'addition', parent.id);
+    panel.appendChild(r.btn); panel.appendChild(r.clock); panel.appendChild(back);
+  }
+
+  async function reflectPanel(act) {
+    shell(act.label, act.note ||
+      'Fifteen to thirty minutes of journaling, stream of consciousness. Speak it or write it.');
+    const r = recorderUI(async () => {
+      await SDJ.logActivity('reflect', { spoken: true });
+    }, 'reflection', null);
+    panel.appendChild(r.btn);
+    const ta = document.createElement('textarea');
+    ta.placeholder = 'Or write it. Keep the pen moving.';
+    panel.appendChild(ta);
+    const keep = document.createElement('button');
+    keep.className = 'pbtn';
+    keep.textContent = 'Keep the writing';
+    keep.onclick = async () => {
+      if (!ta.value.trim()) return;
+      await c.from('sdj_reflections').insert({ user_id: user.id, body: ta.value });
+      await SDJ.logActivity('reflect', { chars: ta.value.length });
+      ta.value = '';
+      keep.textContent = 'Kept';
+    };
+    const btns = document.createElement('div');
+    btns.className = 'panelBtns';
+    btns.appendChild(keep);
+    panel.appendChild(btns);
+  }
+
+  async function readOtherPanel(act, swapKind, title) {
+    shell(title, act.note);
+    const s = await c.from('sdj_swaps').select('*, sdj_dreams(*)')
+      .eq('to_user', user.id).eq('kind', swapKind).eq('status', 'assigned').limit(1).maybeSingle();
+    let d = s.data && s.data.sdj_dreams;
+    if (!d) {
+      const seed = await c.from('sdj_dreams').select('*').eq('is_seed', true).limit(1).maybeSingle();
+      d = seed.data || null;
+    }
+    // the transcript stands in its box whether or not the words have come
+    const tr = document.createElement('div');
+    tr.className = 'transcript';
+    tr.textContent = d && d.transcript ? d.transcript
+      : 'No written words for this one yet. Listen, and read it in your own voice.';
+    panel.appendChild(tr);
+    if (d && d.audio_path) {
+      const row = document.createElement('div');
+      row.className = 'listRow';
+      row.innerHTML = '<span class="nm">Their voice</span>';
+      const play = document.createElement('button');
+      play.textContent = 'play';
+      play.onclick = async () => { new Audio(await SDJ.audioUrl(d.audio_path)).play(); };
+      row.appendChild(play);
+      panel.appendChild(row);
+    }
+    const r = recorderUI(async (mine) => {
+      await SDJ.logActivity(act.kind, { source: d && d.id });
+      if (s.data && s.data.id) {
+        await c.from('sdj_swaps').update({ status: 'completed', result_dream_id: mine.id,
+          completed_at: new Date().toISOString() }).eq('id', s.data.id);
+      }
+    }, 'spoken_other', d && d.id);
+    panel.appendChild(r.btn);
+  }
+
+  async function promptPanel(act) {
+    const { back } = shell(act.label, act.note);
+    let share = await c.from('sdj_prompt_shares').select('*, sdj_prompts(*)')
+      .eq('user_id', user.id).eq('day', new Date().toISOString().slice(0, 10)).maybeSingle();
+    if (!share.data) {
+      const prompts = await c.from('sdj_prompts').select('*').eq('active', true);
+      const pick = (prompts.data || [])[Math.floor(Math.random() * (prompts.data || []).length)];
+      if (pick) {
+        const ins = await c.from('sdj_prompt_shares').insert({ user_id: user.id, prompt_id: pick.id }).select('*, sdj_prompts(*)').single();
+        share = ins;
+        await SDJ.logActivity('prompt_share', { prompt: pick.id });
+      }
+    }
+    const body = share.data && share.data.sdj_prompts ? share.data.sdj_prompts.body : 'The bank is quiet today.';
+    const p = document.createElement('p');
+    p.className = 'big-italic';
+    p.style.cssText = 'font-style:italic; font-size:clamp(22px,3.6vw,30px); color:var(--g-bright); max-width:640px; line-height:1.6;';
+    p.textContent = body;
+    panel.appendChild(p);
+    panel.appendChild(Object.assign(document.createElement('div'), { className: 'note', textContent: 'Carry this into tonight. It goes with you.' }));
+    panel.appendChild(back);
+  }
+
+  async function instructionPanel(act) {
+    shell(act.label, act.note);
+    const items = await c.from('sdj_instruction').select('*').eq('active', true).order('day_order');
+    const rows = (items.data || []).filter((i) => i.audio_path);
+    if (!rows.length) {
+      panel.appendChild(Object.assign(document.createElement('div'), {
+        className: 'note', textContent: 'Instruction arrives soon. The first teachings are being recorded.' }));
+      return;
+    }
+    openListening(rows, 'instruction');
+  }
+
+  // ── the day's cards: they wait in the draw, come to the hand, are laid
+  //    on the field, and rest at last in the grave. The deal renews at two
+  //    in the morning. ──
+  const hand = $('hand');
+  const pile = $('pile');
+  const drawPile = $('drawPile');
+  const field = $('field');
+  const HAND_MAX = 5;
+  // the few words a card can carry, chosen so each one reads plainly
+  const SHORT_NAME = {
+    speak: 'speak your dream',
+    reflect: 'reflect',
+    listen_back: 'listen back',
+    read_other: 'read aloud',
+    add: 'add to it',
+    listen_others: 'others\u2019 dreams',
+    prompt_share: 'share a prompt',
+    speak_other: 'their dream',
+    instruction: 'hear guidance',
+    fac_prompt: 'speak a prompt',
+    fac_address: 'address',
+    fac_bank: 'the bank',
+  };
+  // the order the deck offers itself: the morning's speaking, then the
+  // facilitator's own, then the three that are always held, then the day
+  const DECK_ORDER = ['act:speak', 'fac:prompt', 'fac:address',
+    'tool:listen', 'tool:record', 'fac:bank', 'tool:library'];
+  function deckRank(card) {
+    const i = DECK_ORDER.indexOf(card.key);
+    if (i >= 0) return i;
+    if (card.tone === 'fac') return 1.5;
+    return 100 + (card.act ? (((card.act.start % 24) + 24) % 24) : 24);
+  }
+  const BASE_TOOLS = [
+    { key: 'tool:listen', label: 'listen', tool: 'listen', minutes: 30,
+      svg: '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M3 13c2-4.5 4-4.5 6 0s4 4.5 6 0 4-4.5 6 0"/></svg>' },
+    { key: 'tool:library', label: 'library', tool: 'library',
+      svg: '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M4 6h16M4 11h16M4 16h10"/></svg>' },
+    { key: 'tool:record', label: 'record', tool: 'record', plays: 5,
+      svg: '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" fill="none"><circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>' },
+  ];
+  const FAC_TOOLS = [
+    { key: 'fac:prompt', label: 'prompt', tool: 'fac_prompt',
+      svg: '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M12 4v10M8 8l4-4 4 4M5 19h14"/></svg>' },
+    { key: 'fac:address', label: 'address', tool: 'fac_address',
+      svg: '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M4 10v4h4l6 4V6l-6 4H4zM18 8c1.6 1.8 1.6 6.2 0 8"/></svg>' },
+    { key: 'fac:bank', label: 'the bank', tool: 'fac_bank',
+      svg: '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M4 8h16M4 12h16M4 16h16M8 4v16"/></svg>' },
+  ];
+  function facClassId() {
+    const mine = (SDJ._classes || []).filter((m) => m.role === 'facilitator');
+    return mine.length ? mine[0].class_id : null;
+  }
+  function dreamDay() {
+    const d = new Date();
+    if (d.getHours() < 2) d.setDate(d.getDate() - 1);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+      '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function handState() {
+    try {
+      const s = JSON.parse(localStorage.getItem('sdj-hand') || 'null');
+      if (s && s.day === dreamDay()) {
+        s.inHand = s.inHand || [];
+        s.onField = s.onField || [];
+        s.grave = s.grave || [];
+        s.played = s.played || [];
+        return s;
+      }
+    } catch (e) {}
+    return { day: dreamDay(), inHand: [], onField: [], grave: [], played: [],
+      recordLeft: 5, listenLeft: 30 };
+  }
+  function keepHandState(s) {
+    s.day = dreamDay();
+    try { localStorage.setItem('sdj-hand', JSON.stringify(s)); } catch (e) {}
+  }
+
+  // every card the day could hold, wherever it happens to be
+  function allCards() {
+    const st = handState();
+    const hour = SDJ.nowHour();
+    const listenLive = lastWindows.filter((w) => !w.red).some((w) =>
+      (w.kind === 'listen_others' || w.kind === 'listen_back') &&
+      SDJ.currentActivities([w], hour).length);
+    const out = [];
+    // the day's exercises arrive as their hour comes round
+    for (const w of lastWindows) {
+      const started = ((hour % 24) + 24) % 24 >= (((w.start % 24) + 24) % 24) ||
+        SDJ.currentActivities([w], hour).length > 0;
+      if (!started) continue;
+      out.push({ key: 'act:' + w.kind, label: w.label, act: w,
+        tone: w.red ? 'fac' : 'now', turn: !!w.turn,
+        short: SHORT_NAME[w.kind] || w.label });
+    }
+    for (const t of BASE_TOOLS) {
+      out.push({ key: t.key, label: t.label, tool: t.tool, svg: t.svg, tone: 'always',
+        shine: t.tool === 'listen' && listenLive,
+        left: t.plays ? st.recordLeft : (t.minutes ? st.listenLeft : null),
+        unit: t.plays ? 'plays' : (t.minutes ? 'min' : null) });
+    }
+    if (facClassId()) {
+      for (const t of FAC_TOOLS) {
+        out.push({ key: t.key, label: t.label, tool: t.tool, svg: t.svg, tone: 'fac' });
+      }
+    }
+    return out;
+  }
+  const cardFor = (key) => allCards().find((x) => x.key === key) || null;
+  function drawable() {
+    const st = handState();
+    const taken = st.inHand.concat(st.onField, st.grave);
+    return allCards().filter((x) => taken.indexOf(x.key) < 0)
+      .sort((a, b) => deckRank(a) - deckRank(b));
+  }
+
+  // ── the hand ──
+  let handSig = '', flyFromDeck = null;
+  function frameWidth() {
+    return ($('frame') && $('frame').clientWidth) ||
+      ((window.__sdjDevice && window.__sdjDevice.clientWidth) || window.innerWidth);
+  }
+  /* the card's own width, which grows where there is room for it */
+  function cardW() {
+    const v = getComputedStyle($('winBot')).getPropertyValue('--cw').trim();
+    return parseInt(v, 10) || 60;
+  }
+  /* the floor the fan is dealt across: everything but the deck and the grave */
+  function handRoom() { return Math.max(110, Math.min(620, frameWidth() - 200)); }
+  function markLifts() {
+    hand.querySelectorAll('.handSlot').forEach((s) => {
+      s.classList.toggle('lift', handQueue.indexOf(s.dataset.key) >= 0);
+    });
+  }
+  function cardFace(card) {
+    const el = document.createElement('button');
+    el.className = 'handCard tone-' + (card.tone || 'now') +
+      (card.shine ? ' shining' : '') + (card.left === 0 ? ' spent' : '');
+    el.innerHTML = (card.svg || '') +
+      '<span class="cname">' + (card.short || card.label) + '</span>' +
+      (card.left !== null && card.left !== undefined
+        ? '<span class="pip">' + card.left + '</span>' : '');
+    return el;
+  }
+  function renderHand(force) {
+    if (!handReady || adminMode) return;
+    const st = handState();
+    const cards = st.inHand.map(cardFor).filter(Boolean);
+    /* the hand is placed in pixels taken from the width of the frame, so a change
+       of width is as much a change as a change of cards. Without it the hand keeps
+       the offsets of the width it was dealt at and sits against one side. */
+    const cw = cardW();
+    const sig = Math.round(frameWidth()) + '|' + cw + '|' +
+      cards.map((d) => d.key + ':' + (d.left === undefined ? '' : d.left)).join('|');
+    if (!force && sig === handSig) { markLifts(); renderPiles(); renderField(); return; }
+    handSig = sig;
+    const step = cards.length > 1
+      ? Math.max(18, Math.min(cw - 12, (handRoom() - cw) / (cards.length - 1))) : 0;
+    const handW = cw + (cards.length - 1) * step + 10;
+    hand.style.width = handW + 'px';
+    // centred in the floor that the two piles leave free
+    hand.style.left = Math.max(8, Math.round((frameWidth() - 88 - handW) / 2)) + 'px';
+    hand.innerHTML = '';
+    cards.forEach((card, i) => {
+      const slot = document.createElement('div');
+      slot.className = 'handSlot' + (handQueue.indexOf(card.key) >= 0 ? ' lift' : '');
+      slot.dataset.key = card.key;
+      slot._card = card;
+      const el = cardFace(card);
+      el.style.setProperty('--dur', (9 + (i % 5) * 1.7).toFixed(1) + 's');
+      el.style.setProperty('--delay', (-(i * 1.9) % 9).toFixed(2) + 's');
+      const t = i - (cards.length - 1) / 2;
+      const spread = Math.min(9, 40 / Math.max(1, cards.length));
+      slot.style.setProperty('--rot', (t * spread).toFixed(1) + 'deg');
+      slot.style.setProperty('--arc', Math.round(t * t * 1.6) + 'px');
+      slot.style.left = (i * step) + 'px';
+      slot.appendChild(el);
+      hand.appendChild(slot);
+      // a drawn card travels from the deck to its place in the hand
+      if (card.key === flyFromDeck) {
+        const dp = drawPile.getBoundingClientRect(), hb = hand.getBoundingClientRect();
+        if (dp.width) {
+          slot.style.transition = 'none';
+          slot.style.transform = 'translate(' + Math.round(dp.left - hb.left - i * step) +
+            'px,' + Math.round(dp.top - hb.top) + 'px) rotate(-9deg)';
+          slot.style.opacity = '0.92';
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            slot.style.transition = 'transform 1.05s cubic-bezier(.22,.9,.25,1), opacity .6s ease';
+            slot.style.transform = '';
+            slot.style.opacity = '';
+            setTimeout(() => { slot.style.transition = ''; }, 1150);
+          }));
+        }
+        flyFromDeck = null;
+      }
+    });
+    hand.classList.toggle('deck', checkMode);
+    if (checkMode) {
+      hand.style.left = '8px';
+      hand.style.width = '76px';
+      const slots = [...hand.querySelectorAll('.handSlot')];
+      slots.forEach((s, i) => {
+        s.style.left = (i * 3) + 'px';
+        s.style.setProperty('--rot', '0deg');
+        s.style.setProperty('--arc', '0px');
+      });
+      const top = slots.length && slots[slots.length - 1].querySelector('.handCard');
+      if (top) top.innerHTML = '<span class="pip big">' + cards.length + '</span>';
+    }
+    renderPiles();
+    renderField();
+  }
+  // the whole draw, face up in two rows, for whoever keeps the room
+  function canCheck() {
+    return window.__sdjRole === 'admin' || !!facClassId();
+  }
+  function renderSpread() {
+    const box = $('drawSpread'), btn = $('checkBtn');
+    box.classList.toggle('on', checkMode);
+    if (btn.parentNode === box) pile.parentNode.appendChild(btn);
+    box.innerHTML = '';
+    if (!checkMode) return;
+    const waiting = drawable();
+    const half = Math.ceil(waiting.length / 2);
+    box.appendChild(btn);
+    [waiting.slice(0, half), waiting.slice(half)].forEach((row) => {
+      if (!row.length) return;
+      const r = document.createElement('div');
+      r.className = 'spreadRow';
+      row.forEach((card, i) => {
+        const el = cardFace(card);
+        el.style.setProperty('--dur', (9 + (i % 5) * 1.7).toFixed(1) + 's');
+        el.style.setProperty('--delay', (-(i * 1.9) % 9).toFixed(2) + 's');
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setCheck(false);
+          openCard(card);
+        });
+        r.appendChild(el);
+      });
+      box.appendChild(r);
+    });
+  }
+  function setCheck(on) {
+    checkMode = !!on && canCheck();
+    document.body.classList.toggle('checking', checkMode);
+    $('checkBtn').textContent = checkMode ? 'hide cards' : 'check cards';
+    if (checkMode) { pileOpen = false; pilePick = null; document.body.classList.remove('graveOpen'); }
+    haptic('grab');
+    handSig = '';
+    renderHand(true);
+    renderSpread();
+  }
+  $('checkBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    setCheck(!checkMode);
+  });
+
+  // ── the draw and the grave ──
+  function renderPiles() {
+    const st = handState();
+    const waiting = drawable();
+    drawPile.classList.toggle('on', waiting.length > 0);
+    drawPile.classList.toggle('fresh', waiting.length > 0 && st.inHand.length < HAND_MAX);
+    drawPile.innerHTML = '';
+    if (waiting.length) {
+      const backs = Math.min(3, waiting.length);
+      for (let i = 0; i < backs; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'handSlot';
+        slot.style.setProperty('--rot', ((i - 1) * 3).toFixed(1) + 'deg');
+        slot.style.left = (i * 3) + 'px';
+        const el = document.createElement('div');
+        el.className = 'handCard back';
+        el.style.setProperty('--dur', (10 + i * 1.6).toFixed(1) + 's');
+        el.style.setProperty('--delay', (-(i * 2.2) % 9).toFixed(2) + 's');
+        // the count rides the top card alone, with the word above it
+        if (i === backs - 1) {
+          el.innerHTML = (st.inHand.length < HAND_MAX ? '<span class="pip word">draw</span>' : '') +
+            '<span class="pip big">' + waiting.length + '</span>';
+        }
+        slot.appendChild(el);
+        drawPile.appendChild(slot);
+      }
+
+    }
+    nextInWord(waiting.length);
+    $('checkBtn').classList.toggle('on', canCheck() && !adminMode);
+    if (checkMode) renderSpread();
+    pile.classList.toggle('on', st.grave.length > 0);
+    pile.classList.toggle('open', pileOpen);
+    pile.innerHTML = '';
+    if (!st.grave.length) return;
+    if (!pileOpen) {
+      pile.style.width = '';
+      pile.style.left = '';
+      const backs = Math.min(3, st.grave.length);
+      for (let i = 0; i < backs; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'handSlot';
+        slot.style.setProperty('--rot', ((i - 1) * 4).toFixed(1) + 'deg');
+        slot.style.left = (i * 3) + 'px';
+        const el = document.createElement('div');
+        el.className = 'handCard back';
+        slot.appendChild(el);
+        pile.appendChild(slot);
+      }
+      return;
+    }
+    // opened, the grave lays itself out exactly as the hand does
+    const rows = st.played.slice().reverse().slice(0, 8);
+    const step = rows.length > 1
+      ? Math.max(18, Math.min(42, (handRoom() - 60) / (rows.length - 1))) : 0;
+    const gw = 60 + (rows.length - 1) * step + 10;
+    pile.style.width = gw + 'px';
+    pile.style.left = Math.max(8, Math.round((frameWidth() - 88 - gw) / 2)) + 'px';
+    rows.forEach((pl, i) => {
+      const slot = document.createElement('div');
+      slot.className = 'handSlot' + (pilePick === i ? ' lift' : '');
+      const t = i - (rows.length - 1) / 2;
+      const spread = Math.min(9, 40 / Math.max(1, rows.length));
+      slot.style.setProperty('--rot', (t * spread).toFixed(1) + 'deg');
+      slot.style.setProperty('--arc', Math.round(t * t * 1.6) + 'px');
+      slot.style.left = (i * step) + 'px';
+      const known = cardFor(pl.key);
+      const el = known ? cardFace(known) : document.createElement('button');
+      if (!known) {
+        el.className = 'handCard played';
+        el.innerHTML = '<span class="cname">' + pl.label + '</span>';
+      }
+      el.classList.add('graveCard');
+      el.style.setProperty('--dur', (9 + (i % 5) * 1.7).toFixed(1) + 's');
+      el.style.setProperty('--delay', (-(i * 1.9) % 9).toFixed(2) + 's');
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        pilePick = pilePick === i ? null : i;
+        renderPiles();
+        lastSig = '';
+        showAt(SDJ.nowHour());
+      });
+      slot.appendChild(el);
+      pile.appendChild(slot);
+    });
+  }
+  // when nothing waits, the clock says when the next card comes
+  function nextInWord(waiting) {
+    const el = $('nextIn');
+    if (waiting) { el.classList.remove('on'); return; }
+    const hour = SDJ.nowHour();
+    const nxt = SDJ.nextActivity(lastWindows.filter((w) => !w.red), hour);
+    if (!nxt) { el.classList.remove('on'); return; }
+    let diff = (((nxt.start % 24) + 24) % 24) - (((hour % 24) + 24) % 24);
+    if (diff < 0) diff += 24;
+    const h = Math.floor(diff), m = Math.round((diff - h) * 60);
+    el.innerHTML = 'next card<br>' + (h ? h + 'h ' : '') + m + 'm';
+    el.classList.add('on');
+  }
+  function drawOne() {
+    const st = handState();
+    if (st.inHand.length >= HAND_MAX) return false;
+    const waiting = drawable();
+    if (!waiting.length) return false;
+    st.inHand.push(waiting[0].key);
+    keepHandState(st);
+    handSig = '';
+    flyFromDeck = waiting[0].key;
+    renderHand(true);
+    return true;
+  }
+  drawPile.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (drawOne()) haptic('grab');
+  });
+  // ── 1. the first time the app opens in a day, the hand deals itself ──
+  function dealTheDay() {
+    const st = handState();
+    if (st.dealt) return;
+    st.dealt = true;
+    keepHandState(st);
+    let n = 0;
+    const one = () => {
+      if (!drawOne()) return;
+      haptic('tick');
+      n += 1;
+      if (n < HAND_MAX) setTimeout(one, 620);
+    };
+    setTimeout(one, 900);
+  }
+  setInterval(() => { if (!adminMode) renderPiles(); }, 30000);
+
+  // ── the field ──
+  // the wheel takes every inch the board and the floor can spare
+  function fitStage() {
+    const t = $('winTop');
+    if (!t || !t.clientHeight) return;
+    const inv = $('signInvite');
+    const tutor = document.body.classList.contains('tutoring') ? 100 : 0;
+    const avail = t.clientHeight - 20 - 26 - 8 - tutor - (inv ? inv.offsetHeight + 6 : 0);
+    const w = Math.max(160, Math.min(t.clientWidth * 0.9, avail * 1.052));
+    document.documentElement.style.setProperty('--wheelW', Math.round(w) + 'px');
+  }
+  // the top window shows the wheel or the field; a tapped card brings the field up
+  function showFace(which) {
+    const st = $('stage'), b = $('faceBtn');
+    const up = which === 'field';
+    st.classList.toggle('fieldUp', up);
+    if (b) b.querySelector('span').textContent = up ? 'wheel' : 'field';
+    fitStage();
+    requestAnimationFrame(() => { layoutBoard(); renderField(); lastSig = ''; showAt(SDJ.nowHour()); });
+  }
+  $('faceBtn').addEventListener('click', () => {
+    haptic('tick');
+    showFace($('stage').classList.contains('fieldUp') ? 'wheel' : 'field');
+  });
+  // one outline around both halves, bitten out where the piles stand
+  function layoutBoard() {
+    const board = $('board'), edge = $('boardEdge'), glass = $('boardGlass');
+    if (!board || !edge) return;
+    const b = board.getBoundingClientRect(), f = $('frame').getBoundingClientRect();
+    const W = Math.round(b.width), H = Math.round(b.height);
+    if (!W || !H) return;
+    let nx = 0, ny = 0;
+    if (nx > W * 0.42) nx = Math.round(W * 0.42);
+    if (ny > H - 40) ny = H - 40;
+    if (nx < 8 || ny < 8) { nx = 0; ny = 0; }
+    const r = 13;
+    const d = nx
+      ? ['M', r, 0, 'H', W - r, 'A', r, r, 0, 0, 1, W, r,
+         'V', H - ny, 'H', W - nx, 'V', H - r, 'A', r, r, 0, 0, 1, W - nx - r, H,
+         'H', r, 'A', r, r, 0, 0, 1, 0, H - r, 'V', r, 'A', r, r, 0, 0, 1, r, 0, 'Z'].join(' ')
+      : ['M', r, 0, 'H', W - r, 'A', r, r, 0, 0, 1, W, r, 'V', H - r,
+         'A', r, r, 0, 0, 1, W - r, H, 'H', r, 'A', r, r, 0, 0, 1, 0, H - r,
+         'V', r, 'A', r, r, 0, 0, 1, r, 0, 'Z'].join(' ');
+    edge.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    edge.querySelector('.edge').setAttribute('d', d);
+    const y = Math.round($('actBar').offsetHeight);
+    edge.querySelector('.split').setAttribute('d', 'M 10 ' + y + ' H ' + (W - 10));
+    if (glass) glass.style.clipPath = 'path("' + d + '")';
+    board.style.setProperty('--notch', nx + 'px');
+  }
+  let sizeWait = 0;
+  function onSize() {
+    fitStage();
+    renderHand();                 /* the hand and the piles are placed in pixels */
+    renderPiles();
+    renderField();
+    layoutBoard();
+  }
+  window.addEventListener('resize', () => { clearTimeout(sizeWait); sizeWait = setTimeout(onSize, 60); onSize(); });
+  /* a window of the Engine reaches its new width over a moment, and the frame is
+     not the window: it is watched directly so the floor is laid out for the width
+     it really ends up with */
+  if (typeof ResizeObserver !== 'undefined') {
+    const fr = $('frame');
+    if (fr) new ResizeObserver(() => { clearTimeout(sizeWait); sizeWait = setTimeout(onSize, 60); }).observe(fr);
+  }
+  function renderField() {
+    const st = handState();
+    const cards = st.onField.map(cardFor).filter(Boolean);
+    field.innerHTML = '';
+    layoutBoard();
+    if (!cards.length) return;
+    if (!fieldSel || st.onField.indexOf(fieldSel) < 0) fieldSel = st.onField[st.onField.length - 1];
+    const cw = cardW();
+    const notch = parseInt(getComputedStyle($('board')).getPropertyValue('--notch'), 10) || 0;
+    const room = Math.max(120, (field.clientWidth || 300) - notch - 12);
+    const step = cards.length > 1
+      ? Math.max(20, Math.min(cw + 14, (room - cw) / (cards.length - 1))) : 0;
+    cards.forEach((card, i) => {
+      const slot = document.createElement('div');
+      slot.className = 'fieldCard' + (card.key === fieldSel ? ' sel' : '');
+      slot.style.left = Math.round(10 + i * step) + 'px';
+      slot.style.zIndex = String(10 + i);
+      const el = cardFace(card);
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fieldSel = card.key;
+        haptic('tick');
+        renderField();
+        lastSig = '';
+        showAt(SDJ.nowHour());
+      });
+      slot.appendChild(el);
+      field.appendChild(slot);
+    });
+  }
+
+  // ── choosing, and laying down ──
+  let browsing = false, waveKey = null;
+  function waveAt(e, host) {
+    const slots = [...host.querySelectorAll('.handSlot')];
+    if (!slots.length) return null;
+    let best = null, bd = 1e9;
+    for (const s of slots) {
+      const r = s.getBoundingClientRect();
+      const d = Math.abs(e.clientX - (r.left + r.width / 2));
+      if (d < bd) { bd = d; best = s; }
+    }
+    if (!best) return null;
+    if (best.dataset.key !== waveKey) {
+      waveKey = best.dataset.key;
+      haptic('tick');
+      const at = slots.indexOf(best);
+      slots.forEach((s, i) => {
+        s.classList.toggle('wave', i === at);
+        s.classList.toggle('near', Math.abs(i - at) === 1);
+      });
+    }
+    return best;
+  }
+  function clearWave(host) {
+    browsing = false;
+    waveKey = null;
+    host.querySelectorAll('.handSlot').forEach((s) => {
+      s.classList.remove('wave');
+      s.classList.remove('near');
+    });
+  }
+  hand.addEventListener('pointerdown', (e) => {
+    if (seqActive) return;
+    browsing = true; waveKey = null;
+    waveAt(e, hand);
+  });
+  hand.addEventListener('pointermove', (e) => { if (browsing) waveAt(e, hand); });
+  hand.addEventListener('pointerup', (e) => {
+    if (!browsing) return;
+    const slot = waveAt(e, hand);
+    clearWave(hand);
+    if (!slot || !slot._card) return;
+    const card = slot._card;
+    if (seqActive || card.left === 0) return;
+    setPileOpen(false);
+    const at = handQueue.indexOf(card.key);
+    if (at >= 0) handQueue.splice(at, 1);
+    else { handQueue.push(card.key); showFace('field'); }
+    haptic('grab');
+    markLifts();
+    lastSig = '';
+    showAt(SDJ.nowHour());
+  });
+  hand.addEventListener('pointercancel', () => clearWave(hand));
+  pile.addEventListener('pointerdown', (e) => {
+    if (!pileOpen) return;
+    browsing = true; waveKey = null;
+    waveAt(e, pile);
+  });
+  pile.addEventListener('pointermove', (e) => { if (browsing && pileOpen) waveAt(e, pile); });
+  pile.addEventListener('pointerup', () => { if (pileOpen) clearWave(pile); });
+  pile.addEventListener('pointercancel', () => clearWave(pile));
+  function setPileOpen(o) {
+    pileOpen = o;
+    pilePick = null;
+    document.body.classList.toggle('graveOpen', !!o);
+    if (!o) pile.style.width = '';
+    renderPiles();
+    lastSig = '';
+    showAt(SDJ.nowHour());
+  }
+  pile.addEventListener('click', (e) => {
+    if (e.target.closest('.handCard')) return;
+    e.stopPropagation();
+    setPileOpen(!pileOpen);
+  });
+  function queuedCard() {
+    if (handQueue.length) {
+      for (let i = handQueue.length - 1; i >= 0; i--) {
+        const found = cardFor(handQueue[i]);
+        if (found) return found;
+      }
+    }
+    if (fieldSel) return cardFor(fieldSel);
+    return null;
+  }
+  $('graveClose').addEventListener('click', (e) => {
+    e.stopPropagation();
+    setPileOpen(false);
+    haptic('tick');
+  });
+  handReady = true;
+  renderHand(true);
+  dealTheDay();
+
+  // ── the run: hand to field, field at last to the grave ──
+  function markPlayed(card) {
+    const st = handState();
+    st.played.push({ key: card.key, label: card.label, at: Date.now() });
+    keepHandState(st);
+  }
+  function attachPlayedDream(id, path) {
+    const st = handState();
+    if (!st.played.length || !id) return;
+    st.played[st.played.length - 1].dream = id;
+    st.played[st.played.length - 1].path = path || null;
+    keepHandState(st);
+  }
+  const FIELD_MAX = 4;
+  function layDown(card) {
+    const st = handState();
+    const i = st.inHand.indexOf(card.key);
+    if (i >= 0) st.inHand.splice(i, 1);
+    if (st.onField.indexOf(card.key) < 0) st.onField.push(card.key);
+    // four stand at a time; the oldest that is finished with makes room,
+    // and a tool keeps its place until its own count runs out
+    while (st.onField.length > FIELD_MAX) {
+      let out = st.onField.find((k) => {
+        if (k === card.key) return false;
+        const c2 = cardFor(k);
+        return !c2 || !c2.tool || c2.left === 0;
+      });
+      if (!out) out = st.onField[0] === card.key ? st.onField[1] : st.onField[0];
+      st.onField.splice(st.onField.indexOf(out), 1);
+      if (st.grave.indexOf(out) < 0) st.grave.push(out);
+      if (fieldSel === out) fieldSel = null;
+    }
+    keepHandState(st);
+    fieldSel = card.key;
+  }
+  function spend(card) {
+    const st = handState();
+    if (card.tool === 'record') st.recordLeft = Math.max(0, (st.recordLeft || 0) - 1);
+    if (card.tool === 'listen') st.listenLeft = Math.max(0, (st.listenLeft || 0) - 5);
+    const done = card.act || (card.tool === 'record' && st.recordLeft <= 0) ||
+      (card.tool === 'listen' && st.listenLeft <= 0) ||
+      (!card.act && !card.tool);
+    if (done) {
+      const j = st.onField.indexOf(card.key);
+      if (j >= 0) st.onField.splice(j, 1);
+      if (st.grave.indexOf(card.key) < 0) st.grave.push(card.key);
+      if (fieldSel === card.key) fieldSel = null;
+    }
+    keepHandState(st);
+  }
+  function openCard(card) {
+    markPlayed(card);
+    layDown(card);
+    handSig = '';
+    renderHand(true);
+    if (card.tool === 'listen') listenMorePanel();
+    else if (card.tool === 'library') toggleLibrary(true);
+    else if (card.tool === 'record') sayMorePanel();
+    else if (card.tool === 'fac_prompt') facPromptPanel();
+    else if (card.tool === 'fac_address') facAddressPanel();
+    else if (card.tool === 'fac_bank') facBankPanel();
+    else if (card.act) openPanel(card.act);
+    refreshCorners();
+  }
+  function beginRun() {
+    seqCards = handQueue.map(cardFor).filter(Boolean);
+    if (!seqCards.length && fieldSel) seqCards = [cardFor(fieldSel)].filter(Boolean);
+    if (!seqCards.length) return;
+    seqActive = true;
+    seqIndex = 0;
+    $('actBar').classList.add('fading');
+    $('timing').classList.add('fading');
+    haptic('grab');
+    setTimeout(() => openCard(seqCards[0]), 700);
+    refreshCorners();
+  }
+  function runForward() {
+    if (!seqActive) return;
+    closePanel();
+    toggleLibrary(false);
+    if (seqIndex >= 0 && seqCards[seqIndex]) spend(seqCards[seqIndex]);
+    if (seqIndex < seqCards.length - 1) {
+      seqIndex += 1;
+      haptic('tick');
+      openCard(seqCards[seqIndex]);
+      refreshCorners();
+      return;
+    }
+    endRun();
+  }
+  function runBack() {
+    if (!seqActive) { closePanel(); toggleLibrary(false); refreshCorners(); return; }
+    closePanel();
+    toggleLibrary(false);
+    if (seqIndex > 0) {
+      seqIndex -= 1;
+      haptic('tick');
+      openCard(seqCards[seqIndex]);
+      refreshCorners();
+      return;
+    }
+    endRun(true);
+  }
+  function endRun() {
+    seqActive = false;
+    seqIndex = -1;
+    seqCards = [];
+    handQueue = [];
+    closePanel();
+    toggleLibrary(false);
+    haptic('home');
+    $('actBar').classList.remove('fading');
+    $('timing').classList.remove('fading');
+    handSig = '';
+    hand.classList.add('dealing');
+    renderHand(true);
+    requestAnimationFrame(() => requestAnimationFrame(() => hand.classList.remove('dealing')));
+    lastSig = '';
+    setTimeout(() => { showAt(SDJ.nowHour()); refreshCorners(); }, 700);
+    refreshCorners();
+  }
+
+  // ── the tutorial: one day, played out on this same screen ──
+  let tutorWake = null;
+  const tw = (ms) => new Promise((r) => {
+    if (tutorialStop) { r(); return; }
+    const t = setTimeout(() => { tutorWake = null; r(); }, ms);
+    tutorWake = () => { clearTimeout(t); tutorWake = null; r(); };
+  });
+  function tutorSay(line, note) {
+    if (tutorialStop) return;
+    const bar = $('actBar');
+    bar.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'flashCard tutorLine';
+    card.innerHTML = '<span class="fcName">' + line +
+      (note ? '<small>' + note + '</small>' : '') + '</span>';
+    bar.appendChild(card);
+    $('board').classList.add('quiet');
+    $('board').classList.remove('live');
+  }
+  function tutorClock(hour) {
+    const h = ((hour % 24) + 24) % 24;
+    const hh = Math.floor(h), mm = Math.floor((h - hh) * 60);
+    $('timing').textContent = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+  }
+  // the hand sweeps to an hour the way a clock is wound
+  function turnTo(target, ms) {
+    return new Promise((done) => {
+      const from = tutorHour, span = target - from, t0 = performance.now();
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        tutorHour = target;
+        renderTheWheel(tutorHour);
+        tutorClock(tutorHour);
+        done();
+      };
+      const step = (t) => {
+        if (settled) return;
+        const k = Math.min(1, (t - t0) / ms);
+        const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        tutorHour = from + span * e;
+        renderTheWheel(tutorHour);
+        tutorClock(tutorHour);
+        if (k < 1 && !tutorialStop) requestAnimationFrame(step);
+        else finish();
+      };
+      requestAnimationFrame(step);
+      // the day keeps its appointment even if the frames stop coming
+      setTimeout(finish, ms + 900);
+    });
+  }
+  function tutorState(s) {
+    localStorage.setItem('sdj-hand', JSON.stringify(Object.assign({
+      day: dreamDay(), inHand: [], onField: [], grave: [], played: [],
+      recordLeft: 5, listenLeft: 30, dealt: true }, s || {})));
+    handSig = '';
+    renderHand(true);
+  }
+  async function tutorDraw(n) {
+    for (let i = 0; i < (n || 1); i++) {
+      if (tutorialStop) return;
+      if (!drawOne()) return;
+      haptic('tick');
+      await tw(1250);
+    }
+  }
+  async function tutorPlay(note) {
+    if (tutorialStop) return;
+    const st = handState();
+    const key = st.inHand[st.inHand.length - 1];
+    const card = key && cardFor(key);
+    if (!card) return;
+    markPlayed(card);
+    layDown(card);
+    handSig = '';
+    renderHand(true);
+    haptic('grab');
+    tutorSay(card.label, note);
+    await tw(2600);
+  }
+  async function tutorRetire() {
+    if (tutorialStop) return;
+    const st = handState();
+    const key = st.onField[0];
+    if (!key) return;
+    st.onField.shift();
+    if (st.grave.indexOf(key) < 0) st.grave.push(key);
+    const known = cardFor(key);
+    st.played.push({ key: key, label: known ? known.label : key, at: Date.now() });
+    keepHandState(st);
+    fieldSel = st.onField[st.onField.length - 1] || null;
+    handSig = '';
+    renderHand(true);
+    await tw(1500);
+  }
+  async function startTutorial() {
+    if (tutorialOn) return;
+    const keep = localStorage.getItem('sdj-hand');
+    const realNow = SDJ.nowHour;
+    tutorialOn = true;
+    tutorialStop = false;
+    openScreen(null);
+    setCheck(false);
+    setPileOpen(false);
+    handQueue = [];
+    fieldSel = null;
+    document.body.classList.add('tutoring');
+    fitStage();
+    layoutBoard();
+    tutorHour = 5.6;
+    SDJ.nowHour = () => tutorHour;
+    tutorState({});
+    renderTheWheel(tutorHour);
+    tutorClock(tutorHour);
+    refreshCorners();
+    try {
+      tutorSay('A day turns once around the wheel.',
+        'The hand is the hour you are in. Every arc is an activity waiting for its window.');
+      await tw(4200);
+      await turnTo(7.2, 2600);
+      tutorSay('Morning Exercise opens at seven.',
+        'When a window opens, its card comes to the draw.');
+      await tw(3200);
+      await tutorDraw(1);
+      await tutorPlay('Ten to thirty minutes is a turn. Speak it while the dream is still close.');
+      await tw(1200);
+      await turnTo(12.6, 2600);
+      tutorSay('Midday. Daydream opens.',
+        'What you finished rests in the grave, and the day keeps dealing.');
+      await tw(2600);
+      await tutorRetire();
+      await tutorDraw(1);
+      await tutorPlay('A second turn, ten minutes long, on what you already made.');
+      await tw(1200);
+      await turnTo(17.4, 2600);
+      tutorSay('Evening. Two windows are open at once.',
+        'This is the sweet spot. Come back when several are open and one turn carries them all.');
+      await tw(3600);
+      await tutorDraw(2);
+      await tutorPlay('Cards stay on the field until they are spent.');
+      await tutorPlay('Four can stand there at a time, and the rest wait in the draw.');
+      await tw(1200);
+      await turnTo(21.6, 2600);
+      tutorSay('Night School.', 'Your class arrives on the same wheel, in its own hours.');
+      await tw(2800);
+      await tutorDraw(1);
+      await tutorPlay('The night keeps its own windows, and its own cards.');
+      await tutorRetire();
+      await tw(800);
+      await turnTo(23.8, 2600);
+      tutorSay('The day closes.',
+        'At two in the morning the wheel turns over and a new hand deals itself. ' +
+        'Ten to thirty minutes a turn, two or three turns a day, is the whole practice.');
+      await tw(6000);
+    } finally {
+      SDJ.nowHour = realNow;
+      tutorialOn = false;
+      tutorialStop = false;
+      document.body.classList.remove('tutoring');
+      fitStage();
+      layoutBoard();
+      if (keep === null) localStorage.removeItem('sdj-hand');
+      else localStorage.setItem('sdj-hand', keep);
+      handQueue = [];
+      fieldSel = null;
+      handSig = '';
+      lastSig = '';
+      renderHand(true);
+      renderTheWheel(SDJ.nowHour());
+      showAt(SDJ.nowHour());
+      refreshCorners();
+      paint();
+    }
+  }
+  function endTutorial() {
+    tutorialStop = true;
+    if (tutorWake) tutorWake();
+  }
+  function refreshCorners() {
+    if (tutorialOn) {
+      $('leftBtn').textContent = '\u00d7';
+      $('rightBtn').textContent = '';
+      $('leftBtn').classList.add('xOnly');
+      $('rightBtn').classList.remove('xOnly');
+      return;
+    }
+    if (document.body.dataset.admin) return;
+    const inPanel = panel.classList.contains('open') || $('library').classList.contains('open');
+    if (seqActive || inPanel) {
+      $('leftBtn').textContent = 'back';
+      $('rightBtn').textContent = (seqActive && seqIndex < seqCards.length - 1) ? 'forward' : 'done';
+      $('rightBtn').style.color = 'var(--amber)';
+    } else {
+      $('leftBtn').textContent = 'menu';
+      $('rightBtn').textContent = 'SOLOS';
+      $('rightBtn').style.color = '';
+    }
+    $('leftBtn').classList.toggle('xOnly', $('leftBtn').textContent === '×');
+    $('rightBtn').classList.toggle('xOnly', $('rightBtn').textContent === '×');
+  }
+
+  // ── the facilitator's three: they open on their own pages ──
+  async function facRecordPanel(title, note, onPath) {
+    const cidNow = facClassId();
+    if (!cidNow) return;
+    shell(title, note);
+    const holder = document.createElement('div');
+    const stage = SDJStage.record(holder, {
+      onBlob: async (blob) => {
+        let transcript = '';
+        try {
+          if (SDJ.transcribeNative && window.webkit && window.webkit.messageHandlers &&
+              window.webkit.messageHandlers.transcribe) {
+            transcript = (await SDJ.transcribeNative(blob)) || '';
+          }
+        } catch (e) {}
+        const path = 'class/' + cidNow + '/' + Date.now() + '.m4a';
+        const up = await c.storage.from('sdj-audio').upload(path, blob,
+          { contentType: blob.type || 'audio/mp4' });
+        if (up.error) throw up.error;
+        await onPath(cidNow, path, transcript);
+      },
+    });
+    panelStages.push(stage);
+    panel.appendChild(holder);
+    return;
+  }
+  async function facRecordPanelOld(title, note, onPath) {
+    const cid = facClassId();
+    if (!cid) return;
+    const { back } = shell(title, note);
+    back.style.display = 'none';
+    const rec = SDJ.recorder();
+    const btn = document.createElement('button');
+    btn.className = 'recBig';
+    btn.textContent = '●';
+    const clock = document.createElement('div');
+    clock.className = 'note';
+    clock.textContent = 'tap to record';
+    btn.onclick = async () => {
+      if (!rec.active()) {
+        await rec.start();
+        btn.classList.add('on');
+        btn.textContent = '■';
+        clock.textContent = 'recording';
+      } else {
+        btn.classList.remove('on');
+        btn.textContent = '●';
+        clock.textContent = 'keeping it';
+        const { blob, transcript } = await rec.stop();
+        try {
+          const path = 'class/' + cid + '/' + Date.now() + '.m4a';
+          const up = await c.storage.from('sdj-audio').upload(path, blob,
+            { contentType: blob.type || 'audio/mp4' });
+          if (up.error) throw up.error;
+          await onPath(cid, path, transcript);
+          clock.textContent = 'kept';
+        } catch (e2) { clock.textContent = e2.message; }
+      }
+    };
+    panel.appendChild(btn);
+    panel.appendChild(clock);
+  }
+  function facPromptPanel() {
+    facRecordPanel('Speak a prompt into the bank',
+      'It waits in the bank and goes out to the class.',
+      async (cid, path, transcript) => {
+        await c.from('sdj_class_prompts').insert({ class_id: cid, audio_path: path,
+          body: transcript || '', created_by: user.id });
+      });
+  }
+  function facAddressPanel() {
+    facRecordPanel('Address the class',
+      'Every member gets the notice, and hears you in their next window.',
+      async (cid, path, transcript) => {
+        await c.from('sdj_class_addresses').insert({ class_id: cid, audio_path: path,
+          body: transcript || '', created_by: user.id });
+      });
+  }
+  async function facBankPanel() {
+    const cid = facClassId();
+    const { back } = shell('The bank', 'Every dream in the room, out of sequence.');
+    back.style.display = 'none';
+    const { data: dreams } = await c.from('sdj_dreams').select('*')
+      .eq('class_id', cid).order('created_at', { ascending: false }).limit(40);
+    const rows = (dreams || []).filter((d) => d.audio_path);
+    if (!rows.length) {
+      panel.appendChild(Object.assign(document.createElement('div'), {
+        className: 'note', textContent: 'The room is quiet so far.' }));
+      return;
+    }
+    for (const d of rows) {
+      const row = document.createElement('div');
+      row.className = 'listRow';
+      row.innerHTML = '<span class="nm">' + (d.day || '') + ' · ' + (d.kind || 'dream') + '</span>';
+      const play = document.createElement('button');
+      play.textContent = 'play';
+      play.onclick = async () => { new Audio(await SDJ.audioUrl(d.audio_path)).play(); };
+      row.appendChild(play);
+      panel.appendChild(row);
+    }
+  }
+
+  // ── the library: every recording, the way voice memos reads,
+  //    ordered by when you listened ──
+  function toggleLibrary(open) {
+    const lib = $('library');
+    lib.classList.toggle('open', open);
+    if (open) renderLibrary();
+  }
+  const libHandle = $('libHandle');
+  let libY0 = null;
+  libHandle.addEventListener('pointerdown', (e) => { libY0 = e.clientY; libHandle.setPointerCapture(e.pointerId); });
+  libHandle.addEventListener('pointermove', (e) => {
+    if (libY0 == null) return;
+    const dy = Math.max(0, e.clientY - libY0);
+    $('library').style.transform = 'translateY(' + dy + 'px)';
+  });
+  libHandle.addEventListener('pointerup', (e) => {
+    if (libY0 == null) return;
+    const dy = e.clientY - libY0;
+    libY0 = null;
+    $('library').style.transform = '';
+    if (dy > 110) toggleLibrary(false);
+  });
+  let libTab = 'recordings';
+  async function renderLibrary() {
+    const host = $('libRows');
+    host.innerHTML = '';
+    const tabs = document.createElement('div');
+    tabs.className = 'libTabs';
+    [['recordings', 'recordings'], ['reflections', 'reflections'],
+     ['prompts', 'prompts'], ['listened', 'heard']].forEach(([key, label]) => {
+      const b = document.createElement('button');
+      b.className = 'libTab' + (libTab === key ? ' on' : '');
+      b.textContent = label;
+      b.onclick = () => { libTab = key; renderLibrary(); };
+      tabs.appendChild(b);
+    });
+    host.appendChild(tabs);
+    const body = document.createElement('div');
+    host.appendChild(body);
+    body.innerHTML = '<div class="note" style="padding:18px">Gathering\u2026</div>';
+    const fmtDay = (s2) => new Date(s2).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const fmtTime = (s2) => new Date(s2).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    const rowFor = (title, sub, d) => {
+      const row = document.createElement('div');
+      row.className = 'libRow';
+      row.innerHTML = '<div class="t">' + title + '</div><div class="s">' + sub + '</div>';
+      if (d) {
+        row.addEventListener('click', async () => {
+          if (row.querySelector('.libOpen')) { row.querySelector('.libOpen').remove(); return; }
+          const box = document.createElement('div');
+          box.className = 'libOpen';
+          const t = document.createElement('div');
+          t.className = 'libTrans';
+          t.textContent = d.transcript || d.body || 'No written words for this one.';
+          box.appendChild(t);
+          const btns = document.createElement('div');
+          btns.className = 'libBtns';
+          if (d.audio_path) {
+            const play = document.createElement('button');
+            play.textContent = '\u25b6 play';
+            let au = null;
+            play.addEventListener('click', async (e2) => {
+              e2.stopPropagation();
+              if (au && !au.paused) { au.pause(); play.textContent = '\u25b6 play'; return; }
+              au = new Audio(await SDJ.audioUrl(d.audio_path));
+              au.play();
+              play.textContent = '\u275a\u275a pause';
+              au.onended = () => { play.textContent = '\u25b6 play'; };
+            });
+            btns.appendChild(play);
+          }
+          if (d.user_id === user.id && d.id) {
+            const del = document.createElement('button');
+            del.className = 'danger';
+            del.textContent = 'delete';
+            del.addEventListener('click', async (e2) => {
+              e2.stopPropagation();
+              if (d.body !== undefined && !d.audio_path) {
+                await c.from('sdj_reflections').delete().eq('id', d.id);
+              } else {
+                await c.from('sdj_dreams').delete().eq('id', d.id);
+              }
+              row.remove();
+            });
+            btns.appendChild(del);
+          }
+          box.appendChild(btns);
+          row.appendChild(box);
+        });
+      }
+      return row;
+    };
+    body.innerHTML = '';
+    if (libTab === 'recordings') {
+      const { data } = await c.from('sdj_dreams').select('*').eq('user_id', user.id)
+        .neq('kind', 'reflection').order('created_at', { ascending: false }).limit(200);
+      for (const d of (data || [])) {
+        body.appendChild(rowFor('Your ' + (d.kind === 'addition' ? 'addition' : 'dream'),
+          fmtDay(d.created_at) + ' \u00b7 ' + fmtTime(d.created_at), d));
+      }
+      if (!(data || []).length) body.innerHTML = '<div class="note" style="padding:18px">Nothing kept yet.</div>';
+    } else if (libTab === 'reflections') {
+      const spoken = await c.from('sdj_dreams').select('*').eq('user_id', user.id)
+        .eq('kind', 'reflection').order('created_at', { ascending: false }).limit(100);
+      const written = await c.from('sdj_reflections').select('*').eq('user_id', user.id)
+        .order('created_at', { ascending: false }).limit(100);
+      const all = [...(spoken.data || []), ...(written.data || [])]
+        .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      for (const d of all) {
+        body.appendChild(rowFor(d.audio_path ? 'A spoken reflection' : 'A written reflection',
+          fmtDay(d.created_at) + ' \u00b7 ' + fmtTime(d.created_at), d));
+      }
+      if (!all.length) body.innerHTML = '<div class="note" style="padding:18px">No reflections yet.</div>';
+    } else if (libTab === 'prompts') {
+      const shares = await c.from('sdj_prompt_shares').select('*, sdj_prompts(*)')
+        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(100);
+      const rows = (shares.data || []).map((s2) => ({
+        id: s2.id, created_at: s2.created_at, user_id: user.id,
+        body: s2.sdj_prompts ? s2.sdj_prompts.body : '' }));
+      if (SDJ._classes && SDJ._classes.length) {
+        const ids = SDJ._classes.map((m) => m.class_id);
+        const cp = await c.from('sdj_class_prompts').select('*').in('class_id', ids)
+          .order('created_at', { ascending: false }).limit(100);
+        for (const q of (cp.data || [])) rows.push(q);
+      }
+      rows.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      for (const d of rows) {
+        body.appendChild(rowFor(d.audio_path ? 'A spoken prompt' : 'A prompt',
+          fmtDay(d.created_at) + ' \u00b7 ' + fmtTime(d.created_at), d));
+      }
+      if (!rows.length) body.innerHTML = '<div class="note" style="padding:18px">No prompts yet.</div>';
+    } else {
+      const acts = await c.from('sdj_activities').select('created_at,payload')
+        .eq('user_id', user.id).eq('kind', 'listen_back')
+        .order('created_at', { ascending: false }).limit(400);
+      const heard = {};
+      for (const a2 of (acts.data || [])) {
+        const id2 = a2.payload && a2.payload.dream;
+        if (id2 && !heard[id2]) heard[id2] = a2.created_at;
+      }
+      const ids = Object.keys(heard);
+      if (!ids.length) {
+        body.innerHTML = '<div class="note" style="padding:18px">Nothing heard yet.</div>';
+      } else {
+        const { data } = await c.from('sdj_dreams').select('*').in('id', ids.slice(0, 120));
+        const list = (data || []).sort((a, b) => (heard[a.id] < heard[b.id] ? 1 : -1));
+        for (const d of list) {
+          body.appendChild(rowFor(d.user_id === user.id ? 'Your dream' : 'Another voice',
+            'heard ' + fmtDay(heard[d.id]) + ' \u00b7 ' + fmtTime(heard[d.id]), d));
+        }
+      }
+    }
+  }
+
+  // ── the stream: shuffled, unseen, only heard, with breath between ──
+  async function listenMorePanel() {
+    shell('Listening', '');
+    const rows = [];
+    const swapped = await c.from('sdj_swaps').select('*, sdj_dreams(*)')
+      .eq('to_user', user.id).eq('kind', 'listen').limit(10);
+    for (const s of (swapped.data || [])) if (s.sdj_dreams) rows.push(s.sdj_dreams);
+    const mine = await c.from('sdj_dreams').select('*').eq('user_id', user.id)
+      .order('created_at', { ascending: false }).limit(10);
+    for (const d of (mine.data || [])) rows.push(d);
+    if (!rows.length) {
+      const seeds = await c.from('sdj_dreams').select('*').eq('is_seed', true).limit(6);
+      for (const d of (seeds.data || [])) rows.push(d);
+    }
+    openListening(rows.filter((d) => d.audio_path), 'listen_back', 30);
+  }
+
+  // the recording card, straight from the speak window
+  function sayMorePanel() {
+    shell('Have more to say?', '');
+    const r = recorderUI(async () => {
+      await SDJ.logActivity('speak', { extra: true });
+    }, 'spoken', null);
+    panel.appendChild(r.btn); panel.appendChild(r.clock);
+  }
+})();
+</script>
+<script src="./sdj-phone.js"></script>
+</body>
+</html>

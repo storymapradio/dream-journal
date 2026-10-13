@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<script src="theme-boot.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOLOS: Dream Journal — Welcome</title>
+<style>@font-face { font-family:'VT323'; src:url('vt323.woff2') format('woff2'); font-display:swap; }</style>
+<style>
+  :root { --g:#22c55e; --g-bright:rgba(34,197,94,0.95); --g-dim:rgba(34,197,94,0.55);
+          --g-faint:rgba(34,197,94,0.25); --amber:#ffd24d; --bg:#020604; --text:#d7e8dc; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { text-shadow:0 2px 0 rgba(0,0,0,0.5); }
+  html, body { height:100%; background:var(--bg); color:var(--text);
+    font-family:'VT323', monospace; }
+  /* the SOLOS border: the green frame with rounded corners, everything inside */
+  #frame { position:fixed; inset:12px; border:2px solid rgba(34,197,94,0.55);
+    border-radius:18px; box-shadow:0 0 30px rgba(34,197,94,0.15), inset 0 0 40px rgba(34,197,94,0.04);
+    display:flex; flex-direction:column; overflow:hidden; }
+  #slides { flex:1; position:relative; }
+  /* every entry screen fits the window whole; nothing ever scrolls */
+  .slide { position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    padding:clamp(8px, 1.6vh, 20px) 5vw clamp(58px, 9vh, 84px); gap:clamp(6px, 1.4vh, 16px); opacity:0;
+    pointer-events:none; transition:opacity 0.9s ease; overflow:hidden; }
+  .slide[data-n="4"] { gap:clamp(4px, 1vh, 10px); }
+  .slide[data-n="4"] p { font-size:clamp(12px, 1.9vh, 17px); line-height:1.45; }
+  /* every Continue waits in the same place: the bottom of the screen */
+  .slide .nextBtn { position:absolute; bottom:clamp(14px, 2.6vh, 26px); left:50%;
+    transform:translateX(-50%); }
+  .slide.on { opacity:1; pointer-events:auto; }
+  .eyebrow { font-size:clamp(11px, 1.7vh, 15px); letter-spacing:0.4em; color:var(--amber); text-transform:uppercase; }
+  h1 { font-size:clamp(20px, 4.4vh, 40px); color:var(--g-bright); font-weight:normal;
+    letter-spacing:0.04em; text-shadow:0 0 16px rgba(34,197,94,0.35); }
+  p { font-size:clamp(13px, 2.3vh, 21px); line-height:1.55; max-width:640px; color:var(--text); }
+  p.dim { color:var(--g-dim); }
+  .big-italic { font-style:italic; font-size:clamp(17px, 3.1vh, 30px); color:var(--g-bright);
+    max-width:680px; line-height:1.55; }
+  .four { display:grid; grid-template-columns:1fr 1fr;
+    gap:clamp(7px, 1.2vh, 14px); max-width:700px; width:100%; }
+  .four div { border:2px solid var(--g-faint); border-radius:12px; box-shadow:0 3px 0 rgba(0,0,0,0.45);
+    padding:clamp(7px, 1.4vh, 15px) 12px; font-size:clamp(13px, 2vh, 18px); color:var(--g-bright); }
+  .four div span { display:block; font-size:clamp(10px, 1.5vh, 14px); color:var(--g-dim); margin-top:4px; }
+  .parts { text-align:left; max-width:560px; font-size:clamp(13px, 2.1vh, 19px); line-height:1.7; }
+  .parts b { color:var(--amber); font-weight:normal; }
+  #wheelWrap { width:min(38vh, 74vw); }
+  #wheelWrap svg { width:100%; height:auto; display:block; }
+  #seasonWrap { width:min(28vh, 56vw); }
+  #seasonWrap canvas { width:100%; height:auto; display:block; }
+  #seasonMeta { font-size:clamp(11px, 1.6vh, 15px); color:var(--g-dim); letter-spacing:0.06em; }
+  .nextBtn { border:2px solid rgba(34,197,94,0.6); background:rgba(10,40,22,0.8);
+    color:var(--g-bright); border-radius:9px; padding:clamp(8px,1.5vh,13px) clamp(22px,4vw,36px);
+    font:inherit; font-size:clamp(15px,2.2vh,20px); letter-spacing:0.1em; cursor:pointer;
+    box-shadow:0 3px 0 rgba(0,0,0,0.55), 0 0 18px rgba(34,197,94,0.2); transition:transform .12s; }
+  .nextBtn:active { transform:translateX(-50%) translateY(2px); }
+  .nextBtn:hover { background:rgba(34,197,94,0.14); }
+  .flashCard { border:2px solid var(--amber); border-radius:14px;
+    padding:clamp(11px,2vh,19px) clamp(26px,5vw,46px);
+    font-size:clamp(17px,2.8vh,24px); color:var(--amber); cursor:pointer; letter-spacing:0.08em;
+    animation:sdjflash 1.4s ease-in-out infinite; background:rgba(255,210,77,0.05); }
+  @keyframes sdjflash { 0%,100%{ box-shadow:0 0 8px rgba(255,210,77,0.25);} 50%{ box-shadow:0 0 30px rgba(255,210,77,0.75);} }
+  #dots { flex:none; display:flex; justify-content:center; gap:8px; padding:14px; }
+  #dots i { width:8px; height:8px; border-radius:50%; background:rgba(34,197,94,0.2); }
+  #dots i.on { background:var(--g-bright); }
+  #bar { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; min-height:38px;
+    max-width:96%; }
+  .starChip { border:1px solid var(--g-faint); border-radius:999px;
+    padding:clamp(3px,0.7vh,6px) clamp(6px,1.3vw,11px);
+    font-size:clamp(9px,1.3vh,12px); color:var(--g-dim); opacity:0; transform:translateY(14px);
+    transition:opacity 0.5s, transform 0.5s; }
+  .starChip.in { opacity:1; transform:none; }
+  .starChip.lit { color:var(--amber); border-color:rgba(255,210,77,0.6);
+    animation:sdjflash 1.4s ease-in-out infinite; }
+  /* the way out of a replay: the corner close, pipe-menu's language */
+  #exitX { position:fixed; top:0; left:0; z-index:9920; cursor:pointer; display:none;
+    font-family:'VT323',monospace; font-size:27px; letter-spacing:0;
+    color:#dddddd; background:none; border:none; padding:10px 18px 7px;
+    text-transform:lowercase; transition:opacity .2s ease-in-out; }
+  #exitX:hover { opacity:.6; }
+</style>
+</head>
+<body>
+<button id="exitX" aria-label="Leave the replay">×</button>
+<div id="frame">
+  <div id="slides">
+
+    <div class="slide on" data-n="0">
+      <div class="eyebrow">SOLOS</div>
+      <h1>The Elements of SOLOS</h1>
+      <div class="four">
+        <div>Solo experience<span>The work you do alone.</span></div>
+        <div>Community experience<span>The work you do in communion with others.</span></div>
+        <div>You are the instructor<span>The moments where you teach.</span></div>
+        <div>You are instructed<span>The moments where you are taught.</span></div>
+      </div>
+      <p class="dim">These four together make a good, solid day. These four together are what make this a strong habit formation tool.</p>
+      <button class="nextBtn">Continue</button>
+    </div>
+
+    <div class="slide" data-n="1">
+      <div class="eyebrow">The Science</div>
+      <p class="big-italic">Habits are created over thirty days of real, committed activity.</p>
+      <div id="seasonWrap"><canvas id="wheel-canvas" width="960" height="960"></canvas></div>
+      <div id="seasonMeta"><span id="wheel-date"></span> · <span id="wheel-daylight"></span></div>
+      <p>Eight encounters rotate through each day, expanding and contracting with the seasons. Animated through one full year at 40°N.</p>
+      <p class="dim">In order to create a good habit, one must stay in the world of that habit throughout the day. And over the month, over a season, watch as the cycles change.</p>
+      <button class="nextBtn">Continue</button>
+    </div>
+
+    <div class="slide" data-n="2">
+      <div class="eyebrow">Classes</div>
+      <h1>Choose your class</h1>
+      <div class="flashCard" id="classCard">SOLOS: Dream Journal</div>
+      <p class="dim">A multivariate experience throughout the day that keeps you in your dreams.</p>
+    </div>
+
+    <div class="slide" data-n="3">
+      <div class="eyebrow">The Eight Parts</div>
+      <div class="parts">
+        <b>Speak your dream.</b><br>
+        <b>Reflect about your dream.</b><br>
+        <b>Someone else reads your dream aloud.</b><br>
+        <b>Listen to your dream that someone else has spoken.</b><br>
+        <b>Add to your dream once you listen back.</b><br>
+        <b>Speak someone else's dream.</b><br>
+        <b>Share a dream prompt from a bank.</b><br>
+        <b>Listen to dream instruction.</b>
+      </div>
+      <p class="dim">Every day you will speak your dream when you wake up. Every day you will listen back. Every day you will listen for instruction. All the others occur over time.</p>
+      <p>Knowing this is just the first step. My question for you is this: how will you approach this new habit?</p>
+      <button class="nextBtn">Continue</button>
+    </div>
+
+    <div class="slide" data-n="4">
+      <div class="eyebrow">Your Day</div>
+      <div id="wheelWrap"><svg id="tutWheel" viewBox="-26 -26 412 412"></svg></div>
+      <div id="bar"></div>
+      <p class="dim" id="youAreHere" style="opacity:0; transition:opacity 1s">You are here. Tomorrow, when you wake up, your first activity will be to listen to your dreams. Though it is possible to listen to a couple of other people's dreams as well. Those will be waiting for you.</p>
+      <button class="nextBtn" style="visibility:hidden">Continue</button>
+    </div>
+
+    <div class="slide" data-n="5">
+      <p class="big-italic">What happens when you connect with this great habit of dreaming?</p>
+      <p class="big-italic">What happens when you disconnect from your ego, your voice, and your words?</p>
+      <p class="big-italic">What happens when you let the dream take on a life of its own?</p>
+      <button class="nextBtn">Continue</button>
+    </div>
+
+    <div class="slide" data-n="6">
+      <h1>Are you ready to create your first habit?</h1>
+      <button class="nextBtn" id="signupBtn">Begin</button>
+      <p class="dim">Your wheel, your recordings and your rhythm stay here, on this device. Classes and cohorts gather on the shared site at asynchronousinstruments.com.</p>
+    </div>
+
+  </div>
+  <div id="dots"></div>
+</div>
+
+
+
+<script src="local/local-supabase.js"></script>
+<script src="local/local.js"></script>
+<script src="schedule.js"></script>
+<script src="sdj-core.js"></script>
+<script src="wheel-seasons.js"></script>
+<script>
+(async function () {
+  'use strict';
+  // A signed-in dreamer goes straight to the wheel; the welcome plays for
+  // newcomers, and again whenever the menu asks for a replay.
+  const replaying = new URLSearchParams(location.search).has('replay');
+  // the welcome plays once on its own; afterwards the wheel greets you
+  try { localStorage.setItem('sdj-seen-welcome', '1'); } catch (e) {}
+  if (!replaying) {
+    const u0 = await SDJ.user();
+    if (u0) { location.replace('app.html'); return; }
+  } else {
+    // a replay can always be left: the corner close returns to the wheel
+    const x = document.getElementById('exitX');
+    x.style.display = 'block';
+    x.addEventListener('click', () => { location.href = 'app.html'; });
+  }
+  const slides = [...document.querySelectorAll('.slide')];
+  const dots = document.getElementById('dots');
+  slides.forEach((s, i) => {
+    const d = document.createElement('i');
+    if (i === 0) d.className = 'on';
+    dots.appendChild(d);
+  });
+  let at = 0;
+  function go(n) {
+    if (n < 0 || n >= slides.length) return;
+    slides[at].classList.remove('on');
+    dots.children[at].classList.remove('on');
+    at = n;
+    slides[at].classList.add('on');
+    dots.children[at].classList.add('on');
+    if (at === 4) playStars();
+  }
+  document.querySelectorAll('.nextBtn').forEach((b) => {
+    if (b.id !== 'signupBtn') b.addEventListener('click', () => go(at + 1));
+  });
+  document.getElementById('classCard').addEventListener('click', () => go(3));
+  // Always land on the sign-up page you already built; it knows what to
+  // do with a signed-in visitor, and the next param carries them onward.
+  // Full file paths work on the live server and any static serve alike.
+  // Always land on the sign-up page you already built; it knows what to
+  // do with a signed-in visitor, and the next param carries them onward.
+  document.getElementById('signupBtn').addEventListener('click', () => {
+    location.href = 'app.html';
+  });
+
+  await SDJ.loadSchedule();
+
+  // Slide 4: the wheel receives its stars, one by one, each flashing with
+  // its name in the bar below, as if they are landing at their hours.
+  let starsPlayed = false;
+  function playStars() {
+    if (starsPlayed) return;
+    starsPlayed = true;
+    const svg = document.getElementById('tutWheel');
+    const bar = document.getElementById('bar');
+    SDJ.renderWheel(svg, { stars: false, r: 180, crown: false });
+    const acts = SDJ.rawWindows();
+    acts.forEach((a, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'starChip';
+      chip.textContent = a.label;
+      bar.appendChild(chip);
+      setTimeout(() => {
+        chip.classList.add('in', 'lit');
+        // the same instrument the dreamer will live in, filling as it speaks
+        SDJ.renderWheel(svg, { windows: acts.slice(0, i + 1), hour: SDJ.nowHour(), r: 180, crown: false });
+        setTimeout(() => chip.classList.remove('lit'), 1400);
+      }, 900 * i + 400);
+    });
+    setTimeout(() => {
+      document.getElementById('youAreHere').style.opacity = 1;
+      const btn = slides[4].querySelector('.nextBtn');
+      btn.style.visibility = 'visible';
+    }, 900 * acts.length + 900);
+  }
+})();
+</script>
+
+<script src="./sdj-phone.js"></script>
+</body>
+</html>

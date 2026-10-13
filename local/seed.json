@@ -1,0 +1,30 @@
+{
+  "version": "dream-journal-2026-10-13",
+  "about": "The Dream Journal's stock content, exported from the site: the open rhythm (the Dream Journal class's cards, as oh_sequence reads them), the exercises the rhythm draws on, and the bank of dream prompts. Only the five practices one person can keep alone are here; reading, speaking and hearing other people's dreams, instruction and the facilitator's tools belong to the shared site. The one profiles row makes the person on this device the keeper of their own wheel.",
+  "tables": {
+    "oh_cards": [
+      { "id": "1b52ba73-19fc-47dd-a3fa-eaffd8dd1161", "class_id": "d4ea3a71-0000-4d00-9c00-000000000001", "number": 1, "kind": "record", "title": "Speak your dream", "text": "Upon waking, speak the dream you have just left. Five to ten minutes is plenty, and there is no timer.", "section": 7, "slot": 0.095, "dur_h": 5, "cadence_n": 1, "cadence_unit": "days", "rotate": false, "start_day": "2026-08-26", "ring": 2, "active": true, "rhythm": true, "times_per_day": 1, "source_ref": { "sdj": "speak", "for_facilitator": false } },
+      { "id": "1fbdcc8e-5f62-4543-a2fe-ab6e46a6c1b9", "class_id": "d4ea3a71-0000-4d00-9c00-000000000001", "number": 2, "kind": "reflect", "title": "Reflect about your dream", "text": "Take thirty minutes with the dream. Speak what the dream stirred, what the dream repeated, and what the dream wanted.", "section": 0, "slot": 0.935, "dur_h": 1, "cadence_n": 1, "cadence_unit": "days", "rotate": false, "start_day": "2026-08-26", "ring": 0, "active": true, "rhythm": true, "times_per_day": 1, "source_ref": { "sdj": "reflect", "for_facilitator": false } },
+      { "id": "35be5c74-27ea-4879-bfb9-5539f486ec16", "class_id": "d4ea3a71-0000-4d00-9c00-000000000001", "number": 3, "kind": "listen_back", "title": "Listen back to your dream", "text": "Play your most recent dream and listen to the whole of it, in your voice or in someone else's.", "section": 2, "slot": 0.885, "dur_h": 1, "cadence_n": 1, "cadence_unit": "days", "rotate": false, "start_day": "2026-08-26", "ring": 0, "active": true, "rhythm": true, "times_per_day": 1, "source_ref": { "sdj": "listen_back", "for_facilitator": false } },
+      { "id": "6df23e34-6459-4c43-beeb-a910bbcdad2c", "class_id": "d4ea3a71-0000-4d00-9c00-000000000001", "number": 5, "kind": "listen_back", "title": "Add to your dream", "text": "Once you have listened back, speak what comes next. The dream keeps going when you give the dream more room.", "section": 1, "slot": 0.345, "dur_h": 1.5, "cadence_n": 1, "cadence_unit": "days", "rotate": false, "start_day": "2026-08-26", "ring": 2, "active": true, "rhythm": true, "times_per_day": 1, "source_ref": { "sdj": "add", "for_facilitator": false } },
+      { "id": "28362867-199c-45ae-b0df-04c3c867af50", "class_id": "d4ea3a71-0000-4d00-9c00-000000000001", "number": 7, "kind": "prompt", "title": "Share a dream prompt", "text": "Choose one prompt from the bank and send the prompt out for tonight.", "section": 4, "slot": 0.04, "dur_h": 1.5, "cadence_n": 1, "cadence_unit": "days", "rotate": true, "start_day": "2026-08-26", "ring": 0, "active": true, "rhythm": true, "times_per_day": 1, "source_ref": { "sdj": "prompt_share", "for_facilitator": false } }
+    ],
+    "sdj_exercises": [
+      { "id": "1a7aa4b6-499a-4907-9ec3-17b8b78bd151", "key": "speak", "label": "Speak your dream", "kind": "speak", "note": "Upon waking. A suggested five to ten minutes. No timer.", "for_facilitator": false, "created_at": "2026-08-26T21:08:23.807962+00:00" },
+      { "id": "80323260-5fae-4dfc-9736-cdba2fe0214e", "key": "reflect", "label": "Reflect about your dream", "kind": "reflect", "note": "Fifteen to thirty minutes of journaling, stream of consciousness. Speak it or write it.", "for_facilitator": false, "created_at": "2026-08-26T21:08:23.807962+00:00" },
+      { "id": "13505df7-2e02-4f66-a995-728c12612e5a", "key": "listen_back", "label": "Listen back to your dream", "kind": "listen_back", "note": "Your dream, in your voice or in someone else's.", "for_facilitator": false, "created_at": "2026-08-26T21:08:23.807962+00:00" },
+      { "id": "8e160f69-7adb-43d3-a94c-403b706a4ef6", "key": "add", "label": "Add to your dream", "kind": "add", "note": "Once you have listened back, speak what comes next.", "for_facilitator": false, "created_at": "2026-08-26T21:08:23.807962+00:00" },
+      { "id": "e287b61a-a747-48ed-954f-24fc079afe8b", "key": "prompt_share", "label": "Share a dream prompt", "kind": "prompt_share", "note": "A prompt from the bank goes out for tonight.", "for_facilitator": false, "created_at": "2026-08-26T21:08:23.807962+00:00" }
+    ],
+    "sdj_prompts": [
+      { "id": "5520e01e-f09a-4c9d-b24b-0c86c3f7fe85", "body": "Tonight, ask your dream to show you a door you have never opened.", "active": true, "created_at": "2026-08-25T19:21:13.465467+00:00" },
+      { "id": "486972c5-ff53-4fa5-bd61-aa50c353f6cf", "body": "Before sleep, hold one question gently and let the dream answer it sideways.", "active": true, "created_at": "2026-08-25T19:21:13.465467+00:00" },
+      { "id": "74fb1a07-8dfa-4905-8b5d-21aeb6cf3090", "body": "Notice the weather inside tonight's dream and report it like a forecaster.", "active": true, "created_at": "2026-08-25T19:21:13.465467+00:00" },
+      { "id": "d2767b7d-db44-4d34-bd3b-f89cbeca4ff7", "body": "Find the oldest person in your dream and remember one thing they say.", "active": true, "created_at": "2026-08-25T19:21:13.465467+00:00" },
+      { "id": "7d1ea256-416b-41e3-a635-48d70457dbb1", "body": "Let tonight's dream give you a sound. Bring it back and speak it.", "active": true, "created_at": "2026-08-25T19:21:13.465467+00:00" }
+    ],
+    "profiles": [
+      { "id": "$uid", "global_role": "admin" }
+    ]
+  }
+}
